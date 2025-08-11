@@ -5,6 +5,7 @@ import db from '../components/db';
 import {z} from "zod";
 import {User} from "../models/userModel";
 import {RoleModel} from "../models/RoleModel";
+import zodErrorMapper from "../components/zodErrorMapper";
 
 const PASSWORD_SALT_ROUNDS = process.env.PASSWORD_SALT_ROUNDS ? parseInt(process.env.PASSWORD_SALT_ROUNDS) : 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
@@ -29,7 +30,7 @@ export const login = async (req: Request, res: Response) => {
     if (!validation.success) {
         return res.status(400).json({
             message: 'Invalid request data',
-            errors: validation.error.issues.map(err => ({field: err.path[0], message: err.message}))
+            errors: validation.error.issues.map(zodErrorMapper)
         });
     }
     const {mobile_no, password} = validation.data;
@@ -74,7 +75,7 @@ export const register = async (req: Request, res: Response) => {
     if (!validation.success) {
         return res.status(400).json({
             message: 'Invalid request data',
-            errors: validation.error.issues.map(err => ({field: err.path[0], message: err.message}))
+            errors: validation.error.issues.map(zodErrorMapper)
         });
     }
     const {email,name, mobile_no, password, role_id} = validation.data;
