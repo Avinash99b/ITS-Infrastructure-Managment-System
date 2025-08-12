@@ -4,7 +4,7 @@ import {Request, Response, NextFunction} from 'express';
 export function requirePermission(permission: string) {
     return (req: Request, res: Response, next: NextFunction) => {
         // Assume req.user.permissions is an array of strings
-        const userPermissions = req.user?.extra_permissions || [];
+        const userPermissions = req.user?.permissions || [];
 
         //Fetch permissions based on role_id if available
         if (userPermissions.includes(permission) || userPermissions.includes("*")) {
@@ -17,7 +17,7 @@ export function requirePermission(permission: string) {
 
 export function requireAnyPermission(permissions: string[]) {
     return (req: Request, res: Response, next: NextFunction) => {
-        const userPermissions = req.user?.extra_permissions || [];
+        const userPermissions = req.user?.permissions || [];
 
         // Also check if the user has the wildcard permission
         if (userPermissions.includes("*")) {
@@ -38,7 +38,7 @@ export function requireAnyPermission(permissions: string[]) {
 
 export function requireAllPermissions(permissions: string[]) {
     return (req: Request, res: Response, next: NextFunction) => {
-        const userPermissions = req.user?.extra_permissions || [];
+        const userPermissions = req.user?.permissions || [];
         // Also check if the user has the wildcard permission
         if (userPermissions.includes("*")) {
             return next(); // User has wildcard permission, proceed to the next middleware

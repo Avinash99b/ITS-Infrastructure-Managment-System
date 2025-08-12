@@ -5,7 +5,7 @@ export interface User {
   mobile_no: string;
   password_hash: string;
   role_id?: number | null;
-  extra_permissions?: string[];
+  permissions?: string[];
   created_at?: Date;
   updated_at?: Date;
 }

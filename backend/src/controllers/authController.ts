@@ -14,8 +14,7 @@ const registrationValidations = z.object({
     name: z.string().min(1, 'Name is required'),
     email: z.email("Email is not valid"),
     mobile_no: z.string().min(10, 'Mobile number must be at least 10 characters').max(15, 'Mobile number must be at most 15 characters'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    role_id: z.number().int().gt(1).positive('Role ID must be a positive integer & > 1')
+    password: z.string().min(8, 'Password must be at least 8 characters')
 })
 
 const loginValidations = z.object({
@@ -48,16 +47,6 @@ export const login = async (req: Request, res: Response) => {
         if (!valid) {
             return res.status(401).json({message: 'Invalid credentials'});
         }
-        const permissionsResult = await db.raw('Select * from roles where id = ?', [user.role_id]);
-        if (permissionsResult.rows.length === 0) {
-            return res.status(404).json({message: 'Role not found'});
-        }
-        const role = permissionsResult.rows[0] as RoleModel;
-        // Fetch permissions based on role_id
-        const permissions = role.permissions
-
-        //Merge extra_permissions with role permissions
-        user.extra_permissions = [...(user.extra_permissions || []), ...permissions];
 
         // Remove password from user object
         user.password_hash = undefined as any;
@@ -78,7 +67,7 @@ export const register = async (req: Request, res: Response) => {
             errors: validation.error.issues.map(zodErrorMapper)
         });
     }
-    const {email,name, mobile_no, password, role_id} = validation.data;
+    const {email,name, mobile_no, password} = validation.data;
 
     try {
         // Check if user already exists
@@ -87,18 +76,12 @@ export const register = async (req: Request, res: Response) => {
             return res.status(409).json({message: 'User already exists'});
         }
 
-        // Check if role exists
-        const roleResult = await db.raw('SELECT * FROM roles WHERE id = ?', [role_id]);
-        if (roleResult.rows.length === 0) {
-            return res.status(404).json({message: 'Role not found'});
-        }
-
         // Hash password
         const hashed = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
         // Insert user
         const result = await db.raw(
-            'INSERT INTO users (email,name, mobile_no, password_hash,role_id) VALUES (?,?,?,?,?) RETURNING id, name, mobile_no, role_id',
-            [email,name, mobile_no, hashed, role_id]
+            'INSERT INTO users (email,name, mobile_no, password_hash) VALUES (?,?,?,?) RETURNING id, name, mobile_no',
+            [email,name, mobile_no, hashed]
         );
         const user = result.rows[0];
         // Remove password from user object

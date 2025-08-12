@@ -1,23 +1,18 @@
 import { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.schema
-      // Roles table - stores roles and their permissions as JSON
-      .createTable('roles', (table) => {
-        table.increments('id').primary();
-        table.string('name').notNullable().unique();
-        table.jsonb('permissions').notNullable().defaultTo('[]');
-      })
-
-      // Users table
+  await knex.schema.createTable('permissions', (table) => {
+      table.string('name').notNullable().primary();
+      table.text('description').nullable();
+      table.timestamps(true, true);
+    })      // Users table
       .createTable('users', (table) => {
         table.increments('id').primary();
         table.string('name').notNullable();
         table.string('email').unique().notNullable();
         table.string('mobile_no').notNullable();
         table.string('password_hash').notNullable();
-        table.integer('role_id').unsigned().references('id').inTable('roles').onDelete('SET NULL');
-        table.jsonb('extra_permissions').defaultTo('[]');
+        table.jsonb('permissions').defaultTo('[]');
         table.timestamps(true, true);
       })
 
@@ -68,7 +63,21 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('technician_id').unsigned().nullable().references('id').inTable('users').onDelete('SET NULL');
         table.timestamp('resolved_at').nullable();
         table.timestamps(true, true);
-      });
+      }).then(() => {
+        //Add default permissions
+        return knex('permissions').insert([
+          {name: 'view_users', description: 'Permission to view users'},
+          {name: 'edit_users', description: 'Permission to edit users'},
+          {name: 'delete_users', description: 'Permission to delete users'},
+          {name: 'edit_roles', description: 'Permission to edit roles'},
+          {name: 'edit_systems', description: 'Permission to edit systems'},
+          {name: 'delete_systems', description: 'Permission to delete systems'},
+          {name: 'edit_faults', description: 'Permission to edit faults'},
+          {name: 'delete_faults', description: 'Permission to delete faults'},
+          {name: '*', description: 'All permissions, use with caution'},
+          {name: 'grant_permissions', description: 'Permission to grant permissions to users except self and wildcard (*)'},
+        ]);
+      })
 }
 
 export async function down(knex: Knex): Promise<void> {
@@ -78,6 +87,6 @@ export async function down(knex: Knex): Promise<void> {
       .dropTableIfExists('rooms')
       .dropTableIfExists('blocks')
       .dropTableIfExists('users')
-      .dropTableIfExists('roles')
-      .dropTableIfExists('levels');
+      .dropTableIfExists('levels')
+        .dropTableIfExists('permissions');
 }
