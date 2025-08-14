@@ -5,8 +5,9 @@ import bcrypt from 'bcryptjs';
 import * as fs from 'fs';
 import dotenv from 'dotenv';
 import Docker from "dockerode";
+import db from "../src/components/db";
 
-module.exports = async function() {
+module.exports = async function () {
     // Start Postgres container
     const container = await new GenericContainer("postgres")
         .withEnvironment({
@@ -41,6 +42,9 @@ module.exports = async function() {
             DATABASE_URL: connectionString,
         },
     });
+
+    await db('users').where('mobile_no', '1234567890').del(); // Clean up any existing test user
+    await db.raw("Insert into users(name, email, mobile_no, password_hash, permissions) values ('Test User', 'testuser@gmail.com','1234567890','$2b$10$sJkse0Ol2teLBMCXX6GuEetSsMiKPW2N5ke9h8fpcqMPBUIdlNqCK','[\"*\"]')");
 
     console.log("Test database setup complete. Container ID:", container.getId());
 }

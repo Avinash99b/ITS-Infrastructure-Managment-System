@@ -11,7 +11,7 @@ export function requirePermission(permission: string) {
             return next();
         }
 
-        return res.status(403).json({message: 'Forbidden: missing permission ' + permission});
+        return res.status(403).json({message: 'Forbidden: missing permission ' + permission + ' for user ' + req.user?.id});
     };
 }
 

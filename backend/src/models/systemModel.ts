@@ -1,3 +1,6 @@
+export const SystemStatuses = ['green', 'orange', 'red'];
+export const SystemTypes = ['spare', 'using'];
+
 export type SystemType = 'spare' | 'using';
 export type SystemStatus = 'green' | 'orange' | 'red';
 
@@ -6,7 +9,6 @@ export interface System {
   room_id?: number | null;
   type: SystemType;
   status: SystemStatus;
-  faulty_parts: string[];
   upload_speed_mbps?: number | null;
   download_speed_mbps?: number | null;
   ping_ms?: number | null;
