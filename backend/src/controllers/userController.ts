@@ -1,5 +1,5 @@
 import type {Request, Response} from 'express';
-import {User} from '../models/userModel';
+import {UserModel} from '../models/userModel';
 import db from "../components/db";
 import {z} from 'zod';
 import logger from '../components/logger';
@@ -22,7 +22,7 @@ const updatePermissionsSchema = z.object({
 export const getUsers = async (_req: Request, res: Response) => {
     try {
         // Fetch all users from the database
-        const users = await db('users').select('*') as User[];
+        const users = await db('users').select('*') as UserModel[];
         logger.info('Fetched all users', {user: _req.user?.id});
 
         // Return the list of users
@@ -67,7 +67,7 @@ export const getUser = async (req: Request, res: Response) => {
             return res.status(400).json({error: 'User ID is required'});
         }
         // Fetch the user by ID
-        const user = await db('users').where({id: userId}).first() as User;
+        const user = await db('users').where({id: userId}).first() as UserModel;
         if (!user) {
             logger.warn('User not found', {user: req.user?.id});
             return res.status(404).json({error: 'User not found'});
@@ -112,7 +112,7 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
         const {permissionsToKeep, userMobileNo} = parsed.data;
 
         // First get user from updaterUserId, he can only grant permissions to other users, not himself, and only permissionsToKeep he has
-        const updaterUser = await db('users').where({id: updaterUserId}).first() as User;
+        const updaterUser = await db('users').where({id: updaterUserId}).first() as UserModel;
         if (!updaterUser) {
             logger.warn('Updater user not found', {user: updaterUserId});
             return res.status(404).json({error: 'Updater user not found'});
@@ -123,7 +123,7 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
             return res.status(403).json({error: 'You cannot update your own permissions'});
         }
 
-        const userToUpdate = await db('users').where({mobile_no: userMobileNo}).first() as User;
+        const userToUpdate = await db('users').where({mobile_no: userMobileNo}).first() as UserModel;
         if (!userToUpdate) {
             logger.warn('User to update not found', {mobile_no: userMobileNo, user: updaterUserId});
             return res.status(404).json({error: 'User to update not found'});

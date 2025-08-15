@@ -1,4 +1,4 @@
-export interface User {
+export interface UserModel {
   id: number;
   name: string;
   email: string;
@@ -7,8 +7,4 @@ export interface User {
   permissions?: string[];
   created_at?: Date;
   updated_at?: Date;
-}
-
-export interface ResponseUserModel extends User {
-    total_permissions?: string[];
 }

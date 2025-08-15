@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../components/db';
 import {z} from "zod";
-import {User} from "../models/userModel";
+import {UserModel} from "../models/userModel";
 import {RoleModel} from "../models/RoleModel";
 import zodErrorMapper from "../components/zodErrorMapper";
 
@@ -39,7 +39,7 @@ export const login = async (req: Request, res: Response) => {
         if (result.rows.length === 0) {
             return res.status(401).json({message: 'User not found'});
         }
-        const user = result.rows[0] as User;
+        const user = result.rows[0] as UserModel;
         if (!user) {
             return res.status(401).json({message: 'Invalid credentials'});
         }

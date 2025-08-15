@@ -1,8 +1,8 @@
 import request from 'supertest';
 import app from '../../src/app';
 import db from "../../src/components/db";
-import {ResponseUserModel} from "../../src/models/userModel";
 import {Knex} from "knex";
+import {UserModel} from "../../src/models/userModel";
 
 let authToken: string;
 let createdRoomId: number;
@@ -16,7 +16,7 @@ const testRoom = {
 
 let blockId: number;
 
-let userModel:ResponseUserModel
+let userModel:UserModel
 beforeAll(async () => {
     // Login as test user
     const res = await request(app)

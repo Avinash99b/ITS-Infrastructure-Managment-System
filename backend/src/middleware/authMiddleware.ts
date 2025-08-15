@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/userModel';
+import { UserModel } from '../models/userModel';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
 export interface AuthRequest extends Request {
-  user?: User;
+  user?: UserModel;
 }
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
@@ -15,7 +15,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ message: 'Invalid token' });
-    req.user = decoded as User;
+    req.user = decoded as UserModel;
     next();
   });
 }
