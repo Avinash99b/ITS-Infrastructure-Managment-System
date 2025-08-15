@@ -1,0 +1,504 @@
+openapi: 3.0.0
+info:
+  title: ITS API
+  version: 1.0.0
+  description: ITS API Documentation
+  contact:
+    name: ITS Support
+    email: bathulaavi@gmail.com
+servers:
+  - url: http://localhost:3000
+    description: Development Server
+  - url: https://its.api.avinash9.tech
+    description: Production Server
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login a user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successful login
+        "401":
+          description: Unauthorized
+  /api/v1/auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "201":
+          description: User created
+        "400":
+          description: Bad request
+  /api/v1/blocks:
+    get:
+      summary: Get all blocks
+      tags:
+        - Blocks
+      responses:
+        "200":
+          description: List of blocks
+    post:
+      summary: Create a new block
+      tags:
+        - Blocks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Block created
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/blocks/{id}:
+    get:
+      summary: Get block by ID
+      tags:
+        - Blocks
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Block details
+        "404":
+          description: Block not found
+    put:
+      summary: Update block by ID
+      tags:
+        - Blocks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Block updated
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: Block not found
+    delete:
+      summary: Delete block by ID
+      tags:
+        - Blocks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Block deleted
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: Block not found
+  /api/v1/faults:
+    get:
+      summary: List all faults
+      tags:
+        - Faults
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of faults
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+    post:
+      summary: Report a fault
+      tags:
+        - Faults
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                systemId:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Fault reported
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/permissions:
+    get:
+      summary: Get all permissions
+      tags:
+        - Permissions
+      responses:
+        "200":
+          description: List of permissions
+  /api/v1/rooms:
+    get:
+      summary: Get all rooms
+      tags:
+        - Rooms
+      responses:
+        "200":
+          description: List of rooms
+    post:
+      summary: Create a new room
+      tags:
+        - Rooms
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                blockId:
+                  type: string
+      responses:
+        "201":
+          description: Room created
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/rooms/{id}:
+    get:
+      summary: Get room by ID
+      tags:
+        - Rooms
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Room details
+        "404":
+          description: Room not found
+    patch:
+      summary: Update room by ID
+      tags:
+        - Rooms
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                blockId:
+                  type: string
+      responses:
+        "200":
+          description: Room updated
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: Room not found
+    delete:
+      summary: Delete room by ID
+      tags:
+        - Rooms
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Room deleted
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: Room not found
+  /api/v1/systems:
+    get:
+      summary: List all systems
+      tags:
+        - Systems
+      responses:
+        "200":
+          description: List of systems
+    post:
+      summary: Register a new system
+      tags:
+        - Systems
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disk_serial_no:
+                  type: string
+                name:
+                  type: string
+      responses:
+        "201":
+          description: System registered
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/systems/{disk_serial_no}:
+    get:
+      summary: Get system by disk serial number
+      tags:
+        - Systems
+      parameters:
+        - in: path
+          name: disk_serial_no
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: System details
+        "404":
+          description: System not found
+    patch:
+      summary: Update system by disk serial number
+      tags:
+        - Systems
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: disk_serial_no
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: System updated
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: System not found
+  /api/v1/systems/{disk_serial_no}/speed:
+    patch:
+      summary: Update system speed
+      tags:
+        - Systems
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: disk_serial_no
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                speed:
+                  type: number
+      responses:
+        "200":
+          description: Speed updated
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: System not found
+  /api/v1/users:
+    get:
+      summary: Get all users
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of users
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/users/me:
+    get:
+      summary: Get current user
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user details
+        "401":
+          description: Unauthorized (No token or invalid token)
+  /api/v1/users/me/permissions:
+    get:
+      summary: Get current user's permissions
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of permissions for current user
+        "401":
+          description: Unauthorized (No token or invalid token)
+  /api/v1/users/permissions:
+    patch:
+      summary: Update user permissions
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Permissions updated
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/users/{id}/permissions:
+    get:
+      summary: Get permissions by user ID
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of permissions for user
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+components: {}
+tags:
+  - name: Auth
+    description: Authentication and user management

@@ -3,7 +3,7 @@ import V1Router from './V1/V1Router';
 
 const router = Router();
 
-router.use('/v1', V1Router);
+router.use('/V1', V1Router);
 
 export default router;
 
