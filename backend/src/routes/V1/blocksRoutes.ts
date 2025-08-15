@@ -46,7 +46,6 @@ const router = Router();
  */
 router.get('/', getBlocks);
 router.post('/', authenticateToken, requirePermission('edit_blocks'), createBlockHandler);
-
 /**
  * @swagger
  * /api/v1/blocks/{id}:
@@ -64,6 +63,13 @@ router.post('/', authenticateToken, requirePermission('edit_blocks'), createBloc
  *         description: Block details
  *       404:
  *         description: Block not found
+ */
+router.get('/:id', getBlock);
+
+
+/**
+ * @swagger
+ * /api/v1/blocks/{id}:
  *   put:
  *     summary: Update block by ID
  *     tags: [Blocks]
@@ -116,8 +122,30 @@ router.post('/', authenticateToken, requirePermission('edit_blocks'), createBloc
  *       404:
  *         description: Block not found
  */
-router.get('/:id', getBlock);
 router.put('/:id', authenticateToken, requirePermission('edit_blocks'), updateBlockHandler);
+/**
+ * @swagger
+ * /api/v1/blocks/{id}:
+ *   delete:
+ *     summary: Delete block by ID
+ *     tags: [Blocks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Block deleted
+ *       401:
+ *         description: Unauthorized \(No token or invalid token\)
+ *       403:
+ *         description: Forbidden \(Missing permission\)
+ *       404:
+ *         description: Block not found
+ */
 router.delete('/:id', authenticateToken, requirePermission('edit_blocks'), deleteBlockHandler);
-
 export default router;

@@ -12,9 +12,56 @@ const router = Router();
  *   get:
  *     summary: List all systems
  *     tags: [Systems]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination (optional)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page (optional)
+ *       - in: query
+ *         name: room_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by room ID (optional)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [green, orange, red]
+ *         description: Filter by system status (optional)
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [spare, using]
+ *         description: Filter by system type (optional)
  *     responses:
  *       200:
  *         description: List of systems
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *       400:
+ *         description: Invalid query parameters
  *   post:
  *     summary: Register a new system
  *     tags: [Systems]

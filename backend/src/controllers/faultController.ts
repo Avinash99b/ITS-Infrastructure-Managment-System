@@ -44,3 +44,29 @@ export const reportFault = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to report fault', details: error });
   }
 };
+
+export const listFaultReports = async (req: Request, res: Response) => {
+  // Paging
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const offset = (page - 1) * limit;
+
+  // Filtering
+  const status = req.query.status as string | undefined;
+  const system_disk_serial_no = req.query.system_disk_serial_no as string | undefined;
+  const reported_by = req.query.reported_by as string | undefined;
+
+  try {
+    let query = db('fault_reports');
+    if (status) query = query.where('status', status);
+    if (system_disk_serial_no) query = query.where('system_disk_serial_no', system_disk_serial_no);
+    if (reported_by) query = query.where('reported_by', reported_by);
+
+    const total = await query.clone().count('* as count').first().then(r => r?.count || 0);
+    const data = await query.clone().offset(offset).limit(limit).orderBy('reported_at', 'desc');
+
+    res.status(200).json({ data, total, page, limit });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch fault reports', details: error });
+  }
+};

@@ -17,9 +17,54 @@ const router = Router();
  *   get:
  *     summary: Get all rooms
  *     tags: [Rooms]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination (optional)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page (optional)
+ *       - in: query
+ *         name: block_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by block ID (optional)
+ *       - in: query
+ *         name: floor
+ *         schema:
+ *           type: integer
+ *         description: Filter by floor (optional)
+ *       - in: query
+ *         name: incharge_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by incharge user ID (optional)
  *     responses:
  *       200:
  *         description: List of rooms
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *       400:
+ *         description: Invalid query parameters
  *   post:
  *     summary: Create a new room
  *     tags: [Rooms]
@@ -47,6 +92,7 @@ const router = Router();
 router.get('/', getAllRooms);
 router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom);
 
+
 /**
  * @swagger
  * /api/v1/rooms/{id}:
@@ -64,6 +110,13 @@ router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom)
  *         description: Room details
  *       404:
  *         description: Room not found
+ */
+router.get('/:id', getRoomById);
+
+
+/**
+ * @swagger
+ * /api/v1/rooms/{id}:
  *   patch:
  *     summary: Update room by ID
  *     tags: [Rooms]
@@ -90,11 +143,18 @@ router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom)
  *       200:
  *         description: Room updated
  *       401:
- *         description: Unauthorized (No token or invalid token)
+ *         description: Unauthorized \(No token or invalid token\)
  *       403:
- *         description: Forbidden (Missing permission)
+ *         description: Forbidden \(Missing permission\)
  *       404:
  *         description: Room not found
+ */
+router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateRoom);
+
+
+/**
+ * @swagger
+ * /api/v1/rooms/{id}:
  *   delete:
  *     summary: Delete room by ID
  *     tags: [Rooms]
@@ -106,9 +166,10 @@ router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom)
  *         required: true
  *         schema:
  *           type: string
+ *         description: Room ID to delete
  *     responses:
  *       204:
- *         description: Room deleted
+ *         description: Room deleted successfully
  *       401:
  *         description: Unauthorized (No token or invalid token)
  *       403:
@@ -116,8 +177,5 @@ router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom)
  *       404:
  *         description: Room not found
  */
-router.get('/:id', getRoomById);
-router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateRoom);
 router.delete('/:id', authenticateToken, requirePermission('edit_rooms'), deleteRoom);
-
 export default router;
