@@ -96,10 +96,8 @@ const permissionsToTest = [
     {name: 'delete_users', description: 'Permission to delete users'},
     {name: 'edit_roles', description: 'Permission to edit roles'},
     {name: 'edit_systems', description: 'Permission to edit systems'},
-    {name: 'delete_systems', description: 'Permission to delete systems'},
     {name: 'view_faults', description: 'Permission to view faults'},
     {name: 'edit_faults', description: 'Permission to edit faults'},
-    {name: 'delete_faults', description: 'Permission to delete faults'},
     {name: '*', description: 'All permissions, use with caution'},
     {
         name: 'grant_permissions',
