@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getUsers, getUserPermissions, getUser, updateUserPermissions} from '../../controllers/userController';
+import {getUsers, getUserPermissions, getUser, updateUserPermissions, getPermissionsByUserId} from '../../controllers/userController';
 import {requirePermission} from "../../middleware/permissionMiddleware";
 import {emptyMiddleware} from "../../middleware/emptyMiddleware";
 import {authenticateToken} from "../../middleware/authMiddleware";
@@ -15,6 +15,8 @@ router.get('/me', authenticateToken, getUser);
 router.get('/me/permissions', authenticateToken,getUserPermissions);
 
 router.patch('/permissions', authenticateToken,requirePermission('grant_permissions'), updateUserPermissions);
+
+router.get('/:id/permissions', authenticateToken, requirePermission('view_users'), getPermissionsByUserId);
 
 
 export default router;

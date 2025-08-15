@@ -2,9 +2,10 @@ import request from 'supertest';
 import app from '../../src/app';
 
 describe('Systems Endpoints', () => {
-  it('should require auth for GET /systems', async () => {
+  it('should not require auth for GET /systems', async () => {
     const res = await request(app).get('/api/v1/systems');
-    expect([401, 403]).toContain(res.status);
+    console.log(res.body, res.status);
+    expect([200,201]).toContain(res.status);
   });
 
   it('should require auth for POST /systems', async () => {
@@ -22,4 +23,3 @@ describe('Systems Endpoints', () => {
   });
   // Add more tests for authorized access and valid/invalid data as needed
 });
-

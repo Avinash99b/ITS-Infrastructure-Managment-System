@@ -6,7 +6,7 @@ import {authenticateToken} from "../../middleware/authMiddleware";
 
 const router = Router();
 
-router.get('/', listFaults);
+router.get('/', authenticateToken, requirePermission('view_faults'),listFaults);
 router.post('/', authenticateToken,requirePermission('report_faults'), reportFault);
 
 export default router;

@@ -4,6 +4,7 @@ import app from '../../src/app';
 describe('Faults Endpoints', () => {
   it('should require auth for GET /faults', async () => {
     const res = await request(app).get('/api/v1/faults');
+    console.log(res.body,res.status)
     expect([401, 403]).toContain(res.status);
   });
 
@@ -15,4 +16,3 @@ describe('Faults Endpoints', () => {
   });
   // Add more tests for authorized access and valid/invalid data as needed
 });
-

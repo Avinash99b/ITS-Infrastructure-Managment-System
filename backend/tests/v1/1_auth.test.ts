@@ -90,7 +90,22 @@ describe('Auth Endpoints', () => {
 
 let adminToken: string;
 const adminUser = {mobile_no: '1234567890', password: 'Desktop@9502'};
-const permissionsToTest = ['view_users', 'grant_permissions', 'edit_profile']; // Example permissions
+const permissionsToTest = [
+    {name: 'view_users', description: 'Permission to view users'},
+    {name: 'edit_users', description: 'Permission to edit users'},
+    {name: 'delete_users', description: 'Permission to delete users'},
+    {name: 'edit_roles', description: 'Permission to edit roles'},
+    {name: 'edit_systems', description: 'Permission to edit systems'},
+    {name: 'delete_systems', description: 'Permission to delete systems'},
+    {name: 'view_faults', description: 'Permission to view faults'},
+    {name: 'edit_faults', description: 'Permission to edit faults'},
+    {name: 'delete_faults', description: 'Permission to delete faults'},
+    {name: '*', description: 'All permissions, use with caution'},
+    {
+        name: 'grant_permissions',
+        description: 'Permission to grant permissions to users except self and wildcard (*)'
+    },
+].map((p) => p.name);
 
 describe('Admin Permission Management', () => {
     it('should login as admin', async () => {
@@ -107,7 +122,7 @@ describe('Admin Permission Management', () => {
             const res = await request(app)
                 .patch('/api/v1/users/permissions')
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({mobile_no: testUser.mobile_no, permissions: [perm]});
+                .send({userMobileNo: testUser.mobile_no, permissionsToKeep: [perm]});
             expect([200, 201]).toContain(res.status);
             expect(res.body.success).toBe(true);
         });
@@ -117,7 +132,7 @@ describe('Admin Permission Management', () => {
         const res = await request(app)
             .patch('/api/v1/users/permissions')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({mobile_no: testUser.mobile_no, permissions: [], revoke: true});
+            .send({userMobileNo: testUser.mobile_no, permissionsToKeep: []});
         expect([200, 201]).toContain(res.status);
         expect(res.body.success).toBe(true);
     });

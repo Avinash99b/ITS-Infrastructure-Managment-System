@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "build": "tsc",
-    "test": "jest --runInBand --config jest.config.js --detectOpenHandles",
+    "test": "jest --forceExit --runInBand --config  jest.config.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
   },
   "keywords": [],

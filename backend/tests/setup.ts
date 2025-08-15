@@ -4,8 +4,7 @@ import {Pool} from 'pg';
 import bcrypt from 'bcryptjs';
 import * as fs from 'fs';
 import dotenv from 'dotenv';
-import Docker from "dockerode";
-import db from "../src/components/db";
+import {Knex} from "knex";
 
 module.exports = async function () {
     // Start Postgres container
@@ -43,8 +42,10 @@ module.exports = async function () {
         },
     });
 
+    const db = require('../src/components/db').default as Knex
     await db('users').where('mobile_no', '1234567890').del(); // Clean up any existing test user
     await db.raw("Insert into users(name, email, mobile_no, password_hash, permissions) values ('Test User', 'testuser@gmail.com','1234567890','$2b$10$sJkse0Ol2teLBMCXX6GuEetSsMiKPW2N5ke9h8fpcqMPBUIdlNqCK','[\"*\"]')");
 
+    await db.destroy()
     console.log("Test database setup complete. Container ID:", container.getId());
 }

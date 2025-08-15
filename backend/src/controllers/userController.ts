@@ -138,12 +138,16 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
         }
 
         //Check if permissionsToKeep is an array and not contains *
-        if (!Array.isArray(permissionsToKeep) || permissionsToKeep.includes('*')) {
-            return res.status(400).json({error: 'Invalid permissions format or cannot include wildcard "*"'});
+        if (!Array.isArray(permissionsToKeep)) {
+            return res.status(400).json({error: 'Invalid permissions format'});
         }
 
         // Check if updaterUser has permission to grant permissions
         for( const permission of permissionsToKeep) {
+            if(updaterUser.permissions?.includes("*")){
+                logger.info('Updater user has wildcard permission, allowing all permissions', {user: updaterUserId});
+                continue; // If updaterUser has wildcard permission, allow all permissions
+            }
             if (permission === '*') {
                 logger.warn('Updater user cannot grant wildcard (*) permission', {user: updaterUserId});
                 return res.status(400).json({error: 'You cannot grant wildcard (*) permission'});
@@ -157,9 +161,28 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
         await db('users').where({mobile_no: userMobileNo}).update({permissions: JSON.stringify(permissionsToKeep)});
         logger.info('Updated user permissions', {user: req.user?.id, permissions: permissionsToKeep});
 
-        res.json({message: 'Permissions updated successfully'});
+        res.json({message: 'Permissions updated successfully', success: true, userMobileNo, permissions: permissionsToKeep});
     } catch (err) {
         logger.error('Failed to update user permissions', {error: err, user: req.user?.id});
         res.status(500).json({error: 'Failed to update user permissions', details: err});
+    }
+};
+
+/***
+ * Fetches permissions for a user by ID.
+ * @param req
+ * @param res
+ */
+export const getPermissionsByUserId = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        const user = await db('users').where({ id }).first();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        // permissions is stored as JSONB
+        res.json(user.permissions || []);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user permissions', details: err });
     }
 };
