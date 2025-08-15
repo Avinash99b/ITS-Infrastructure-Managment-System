@@ -42,11 +42,6 @@ beforeAll(async () => {
 });
 
 describe('Rooms Endpoints', () => {
-    it('GET /api/v1/rooms - should return all rooms', async () => {
-        const res = await request(app).get('/api/v1/rooms');
-        expect(res.status).toBe(200);
-        expect(Array.isArray(res.body)).toBe(true);
-    });
 
     it('POST /api/v1/rooms - should create a room without incharge', async () => {
         const res = await request(app)
@@ -146,5 +141,78 @@ describe('Rooms Endpoints', () => {
             .delete(`/api/v1/rooms/${createdRoomId}`);
         expect(res.status).toBe(401);
     });
-});
 
+    describe('Paging and Filtering', () => {
+        let blockId2: number;
+        let userId2: number;
+        beforeAll(async () => {
+            // Create another block
+            const blockRes = await db('blocks').insert({name: 'Block 2', description: 'Second block'}).returning('id');
+            blockId2 = blockRes[0].id as number;
+            // Create another user
+            const userRes = await db('users').insert({
+                name: 'User2',
+                mobile_no: '9999999999',
+                password_hash: 'Test@123',
+                email:'temp@gmail.com'
+            }).returning('id');
+            userId2 = userRes[0].id as number;
+            // Create rooms with various combinations
+            await db('rooms').insert([
+                {name: 'RoomA', block_id: blockId, floor: 1, incharge_id: userModel.id},
+                {name: 'RoomB', block_id: blockId, floor: 2, incharge_id: userId2},
+                {name: 'RoomC', block_id: blockId2, floor: 1, incharge_id: userModel.id},
+                {name: 'RoomD', block_id: blockId2, floor: 2, incharge_id: null},
+                {name: 'RoomE', block_id: blockId2, floor: 3, incharge_id: userId2},
+            ]);
+        });
+
+        it('GET /api/v1/rooms - should return paginated rooms', async () => {
+            const res = await request(app).get('/api/v1/rooms?limit=2&page=1');
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('data');
+            expect(res.body).toHaveProperty('total');
+            expect(res.body).toHaveProperty('page');
+            expect(res.body).toHaveProperty('limit');
+            expect(Array.isArray(res.body.data)).toBe(true);
+            expect(res.body.data.length).toBeLessThanOrEqual(2);
+        });
+
+        it('GET /api/v1/rooms - should return next page', async () => {
+            const res = await request(app).get('/api/v1/rooms?limit=2&page=2');
+            expect(res.status).toBe(200);
+            expect(res.body.page).toBe(2);
+            expect(res.body.data.length).toBeLessThanOrEqual(2);
+        });
+
+        it('GET /api/v1/rooms - should filter by block_id', async () => {
+            const res = await request(app).get(`/api/v1/rooms?block_id=${blockId2}`);
+            expect(res.status).toBe(200);
+            expect(res.body.data.every((r: { block_id: number; }) => r.block_id === blockId2)).toBe(true);
+        });
+
+        it('GET /api/v1/rooms - should filter by floor', async () => {
+            const res = await request(app).get('/api/v1/rooms?floor=1');
+            expect(res.status).toBe(200);
+            expect(res.body.data.every((r: { floor: number; }) => r.floor === 1)).toBe(true);
+        });
+
+        it('GET /api/v1/rooms - should filter by incharge_id', async () => {
+            const res = await request(app).get(`/api/v1/rooms?incharge_id=${userModel.id}`);
+            expect(res.status).toBe(200);
+            expect(res.body.data.every((r: { incharge_id: number; }) => r.incharge_id === userModel.id)).toBe(true);
+        });
+
+        it('GET /api/v1/rooms - should filter by block_id and floor', async () => {
+            const res = await request(app).get(`/api/v1/rooms?block_id=${blockId2}&floor=3`);
+            expect(res.status).toBe(200);
+            expect(res.body.data.every((r: { block_id: number; floor: number; }) => r.block_id === blockId2 && r.floor === 3)).toBe(true);
+        });
+
+        it('GET /api/v1/rooms - should return empty for non-existent filter', async () => {
+            const res = await request(app).get('/api/v1/rooms?block_id=9999');
+            expect(res.status).toBe(200);
+            expect(res.body.data.length).toBe(0);
+        });
+    });
+});

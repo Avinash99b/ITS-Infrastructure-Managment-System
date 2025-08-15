@@ -14,8 +14,49 @@ const roomSchema = z.object({
 
 export async function getAllRooms(req: Request, res: Response) {
     try {
-        const rooms = await db('rooms').select('*');
-        res.json(rooms);
+        // Parse query params
+        const {
+            page = '1',
+            limit = '10',
+            block_id,
+            floor,
+            incharge_id
+        } = req.query;
+
+        const pageNum = Math.max(Number(page), 1);
+        const limitNum = Math.max(Number(limit), 1);
+        const offset = (pageNum - 1) * limitNum;
+
+        // Build query
+        let query = db('rooms');
+        let countQuery = db('rooms');
+
+        if (block_id) {
+            query = query.where('block_id', block_id);
+            countQuery = countQuery.where('block_id', block_id);
+        }
+        if (floor) {
+            query = query.where('floor', floor);
+            countQuery = countQuery.where('floor', floor);
+        }
+        if (incharge_id) {
+            query = query.where('incharge_id', incharge_id);
+            countQuery = countQuery.where('incharge_id', incharge_id);
+        }
+
+        // Get total count
+        const countResult = await countQuery.count('* as count');
+        const total = countResult && countResult[0] ? Number(countResult[0].count) : 0;
+
+        // Get paginated data
+        const rooms = await query.offset(offset).limit(limitNum).select('*');
+
+        res.json({
+            data: rooms,
+            total,
+            page: pageNum,
+            limit: limitNum
+        });
     } catch (err) {
         logger.error('Failed to fetch rooms', {error: err});
         res.status(500).json({error: 'Failed to fetch rooms'});
