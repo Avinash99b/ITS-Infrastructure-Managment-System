@@ -6,10 +6,12 @@ import {setup,serve} from "swagger-ui-express";
 import * as path from "node:path";
 import fs from "fs";
 import yaml from "yaml";
+import cors from 'cors';
 
 const app = express();
 
 app.use(express.json());
+app.use(cors())
 
 const swaggerOptions = {
     definition: {
