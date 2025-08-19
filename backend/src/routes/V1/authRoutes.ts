@@ -7,9 +7,6 @@ const router = Router();
  * tags:
  *   name: Auth
  *   description: Authentication and user management
- */
-/**
- * @swagger
  * /api/v1/auth/login:
  *   post:
  *     summary: Login a user
@@ -30,11 +27,6 @@ const router = Router();
  *         description: Successful login
  *       401:
  *         description: Unauthorized
- */
-router.post('/login', login);
-
-/**
- * @swagger
  * /api/v1/auth/register:
  *   post:
  *     summary: Register a new user
@@ -52,10 +44,11 @@ router.post('/login', login);
  *                 type: string
  *     responses:
  *       201:
- *         description: User created
+ *         description: User registered
  *       400:
- *         description: Bad request
+ *         description: Invalid request
  */
+router.post('/login', login);
 router.post('/register', register);
 
 export default router;

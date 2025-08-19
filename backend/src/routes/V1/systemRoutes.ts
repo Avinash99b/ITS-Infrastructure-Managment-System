@@ -85,12 +85,6 @@ const router = Router();
  *         description: Unauthorized (No token or invalid token)
  *       403:
  *         description: Forbidden (Missing permission)
- */
-router.get('/', listSystems);
-router.post('/', authenticateToken, requirePermission('edit_systems'), registerSystem);
-
-/**
- * @swagger
  * /api/v1/systems/{disk_serial_no}:
  *   get:
  *     summary: Get system by disk serial number
@@ -135,12 +129,6 @@ router.post('/', authenticateToken, requirePermission('edit_systems'), registerS
  *         description: Forbidden (Missing permission)
  *       404:
  *         description: System not found
- */
-router.get('/:disk_serial_no', getSystem);
-router.patch('/:disk_serial_no', authenticateToken, requirePermission('edit_systems'), updateSystem);
-
-/**
- * @swagger
  * /api/v1/systems/{disk_serial_no}/speed:
  *   patch:
  *     summary: Update system speed
@@ -164,7 +152,7 @@ router.patch('/:disk_serial_no', authenticateToken, requirePermission('edit_syst
  *                 type: number
  *     responses:
  *       200:
- *         description: Speed updated
+ *         description: System speed updated
  *       401:
  *         description: Unauthorized (No token or invalid token)
  *       403:
@@ -172,6 +160,11 @@ router.patch('/:disk_serial_no', authenticateToken, requirePermission('edit_syst
  *       404:
  *         description: System not found
  */
+
+router.get('/', listSystems);
+router.post('/', authenticateToken, requirePermission('edit_systems'), registerSystem);
+router.get('/:disk_serial_no', getSystem);
+router.patch('/:disk_serial_no', authenticateToken, requirePermission('edit_systems'), updateSystem);
 router.patch('/:disk_serial_no/speed', authenticateToken, requirePermission('edit_systems'), updateSpeed);
 
 export default router;

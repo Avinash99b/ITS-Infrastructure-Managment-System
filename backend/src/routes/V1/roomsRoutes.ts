@@ -88,13 +88,6 @@ const router = Router();
  *         description: Unauthorized (No token or invalid token)
  *       403:
  *         description: Forbidden (Missing permission)
- */
-router.get('/', getAllRooms);
-router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom);
-
-
-/**
- * @swagger
  * /api/v1/rooms/{id}:
  *   get:
  *     summary: Get room by ID
@@ -110,13 +103,6 @@ router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom)
  *         description: Room details
  *       404:
  *         description: Room not found
- */
-router.get('/:id', getRoomById);
-
-
-/**
- * @swagger
- * /api/v1/rooms/{id}:
  *   patch:
  *     summary: Update room by ID
  *     tags: [Rooms]
@@ -143,18 +129,11 @@ router.get('/:id', getRoomById);
  *       200:
  *         description: Room updated
  *       401:
- *         description: Unauthorized \(No token or invalid token\)
+ *         description: Unauthorized (No token or invalid token)
  *       403:
- *         description: Forbidden \(Missing permission\)
+ *         description: Forbidden (Missing permission)
  *       404:
  *         description: Room not found
- */
-router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateRoom);
-
-
-/**
- * @swagger
- * /api/v1/rooms/{id}:
  *   delete:
  *     summary: Delete room by ID
  *     tags: [Rooms]
@@ -166,10 +145,9 @@ router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateR
  *         required: true
  *         schema:
  *           type: string
- *         description: Room ID to delete
  *     responses:
  *       204:
- *         description: Room deleted successfully
+ *         description: Room deleted
  *       401:
  *         description: Unauthorized (No token or invalid token)
  *       403:
@@ -177,5 +155,9 @@ router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateR
  *       404:
  *         description: Room not found
  */
+router.get('/', getAllRooms);
+router.post('/', authenticateToken, requirePermission('edit_rooms'), createRoom);
+router.get('/:id', getRoomById);
+router.patch('/:id', authenticateToken, requirePermission('edit_rooms'), updateRoom);
 router.delete('/:id', authenticateToken, requirePermission('edit_rooms'), deleteRoom);
 export default router;

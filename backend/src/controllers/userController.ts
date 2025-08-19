@@ -1,5 +1,5 @@
 import type {Request, Response} from 'express';
-import {UserModel} from '../models/userModel';
+import {UserModel, UserStatus} from '../models/userModel';
 import db from "../components/db";
 import {z} from 'zod';
 import logger from '../components/logger';
@@ -12,27 +12,52 @@ const updatePermissionsSchema = z.object({
     userMobileNo: z.string().length(10).regex(/^\d+$/)
 });
 
+const updateUserStatusSchema = z.object({
+    status: z.enum(UserStatus),
+});
+
+// Zod schema for paging params
+const pagingSchema = z.object({
+    page: z.string().regex(/^\d+$/).transform(Number).default(1),
+    pageSize: z.string().regex(/^\d+$/).transform(Number).default(20),
+});
 
 /**
- * Fetches all users from the database.
- * Returns a list of users with their details.
- * @param _req
+ * Fetches all users from the database with paging.
+ * Returns a paginated list of users with their details.
+ * @param req
  * @param res
  */
-export const getUsers = async (_req: Request, res: Response) => {
-    try {
-        // Fetch all users from the database
-        const users = await db('users').select('*') as UserModel[];
-        logger.info('Fetched all users', {user: _req.user?.id});
+export const getUsers = async (req: Request, res: Response) => {
 
-        // Return the list of users
-        res.json(users);
+    const parsed = pagingSchema.safeParse(req.query);
+    if (!parsed.success) {
+        logger.warn('Invalid paging params', { errors: parsed.error.issues, user: req.user?.id });
+        return res.status(400).json({ error: 'Invalid paging params', details: parsed.error.issues.map(zodErrorMapper) });
+    }
+
+    const { page, pageSize } = parsed.data;
+    const offset = (page - 1) * pageSize;
+
+    try {
+        // Fetch paginated users from the database
+        let users = await db('users')
+            .select("*")
+            .limit(pageSize)
+            .offset(offset) as UserModel[];
+        logger.info('Fetched paginated users', { user: req.user?.id, page, pageSize });
+
+        //Remove sensitive info
+        users = users.map((user)=>{user.password_hash=undefined as any;return user})
+        // Optionally, fetch total count for frontend
+        const countResult = await db('users').count<{ count: string }[]>('id as count');
+        const count = countResult[0]?.count
+        res.json({ users, page, pageSize, total: Number(count) });
     } catch (err) {
-        logger.error('Failed to fetch users', {error: err, user: _req.user?.id});
-        res.status(500).json({error: 'Failed to fetch users', details: err});
+        logger.error('Failed to fetch users', { error: err, user: req.user?.id });
+        res.status(500).json({ error: 'Failed to fetch users', details: err });
     }
 };
-
 /**
  * Fetches the current user's permissions.
  * Expects the user to be authenticated and available in req.user.
@@ -184,5 +209,51 @@ export const getPermissionsByUserId = async (req: Request, res: Response) => {
         res.json(user.permissions || []);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch user permissions', details: err });
+    }
+};
+
+/**
+ * Updates the status of a specific user.
+ * Expects a user ID in the URL parameters and a status in the request body.
+ * The user performing the action cannot change their own status.
+ * @param req
+ * @param res
+ */
+export const updateUserStatus = async (req: Request, res: Response) => {
+    try {
+        const { id: userIdToUpdate } = req.params;
+        const updaterUserId = req.user?.id;
+
+        if (!updaterUserId) {
+            logger.warn('Updater User ID is required for updateUserStatus');
+            return res.status(400).json({ error: 'Updater User ID is required' });
+        }
+
+        if (parseInt(userIdToUpdate as string, 10) === updaterUserId) {
+            logger.warn('User attempted to change their own status', { user: updaterUserId });
+            return res.status(403).json({ error: 'You cannot change your own status.' });
+        }
+
+        const parsed = updateUserStatusSchema.safeParse(req.body);
+        if (!parsed.success) {
+            logger.warn('Invalid status update input', { errors: parsed.error.issues, user: updaterUserId });
+            return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues.map(zodErrorMapper) });
+        }
+
+        const { status } = parsed.data;
+
+        const userToUpdate = await db('users').where({ id: userIdToUpdate }).first();
+        if (!userToUpdate) {
+            logger.warn('User to update not found', { userIdToUpdate, user: updaterUserId });
+            return res.status(404).json({ error: 'User to update not found' });
+        }
+
+        await db('users').where({ id: userIdToUpdate }).update({ status });
+        logger.info('Updated user status', { user: updaterUserId, updatedUser: userIdToUpdate, newStatus: status });
+
+        res.json({ message: 'User status updated successfully', success: true, userId: userIdToUpdate, status });
+    } catch (err) {
+        logger.error('Failed to update user status', { error: err, user: req.user?.id });
+        res.status(500).json({ error: 'Failed to update user status', details: err });
     }
 };

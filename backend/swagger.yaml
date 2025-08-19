@@ -51,9 +51,9 @@ paths:
                   type: string
       responses:
         "201":
-          description: User created
+          description: User registered
         "400":
-          description: Bad request
+          description: Invalid request
   /api/v1/blocks:
     get:
       summary: Get all blocks
@@ -150,9 +150,9 @@ paths:
         "204":
           description: Block deleted
         "401":
-          description: Unauthorized \(No token or invalid token\)
+          description: Unauthorized (No token or invalid token)
         "403":
-          description: Forbidden \(Missing permission\)
+          description: Forbidden (Missing permission)
         "404":
           description: Block not found
   /api/v1/faults:
@@ -392,9 +392,9 @@ paths:
         "200":
           description: Room updated
         "401":
-          description: Unauthorized \(No token or invalid token\)
+          description: Unauthorized (No token or invalid token)
         "403":
-          description: Forbidden \(Missing permission\)
+          description: Forbidden (Missing permission)
         "404":
           description: Room not found
     delete:
@@ -409,10 +409,9 @@ paths:
           required: true
           schema:
             type: string
-          description: Room ID to delete
       responses:
         "204":
-          description: Room deleted successfully
+          description: Room deleted
         "401":
           description: Unauthorized (No token or invalid token)
         "403":
@@ -573,7 +572,7 @@ paths:
                   type: number
       responses:
         "200":
-          description: Speed updated
+          description: System speed updated
         "401":
           description: Unauthorized (No token or invalid token)
         "403":
@@ -661,6 +660,38 @@ paths:
       responses:
         "200":
           description: List of permissions for user
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/users/{id}/status:
+    patch:
+      summary: Update user status
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: New status for the user (e.g., active, inactive, suspended)
+      responses:
+        "200":
+          description: User status updated
+        "400":
+          description: Invalid request
         "401":
           description: Unauthorized (No token or invalid token)
         "403":

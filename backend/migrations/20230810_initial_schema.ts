@@ -13,6 +13,8 @@ export async function up(knex: Knex): Promise<void> {
             table.string('mobile_no').notNullable();
             table.string('password_hash').notNullable();
             table.jsonb('permissions').defaultTo('[]');
+            table.enum('status', ['active', 'inactive','suspended']).defaultTo('active');
+            //TODO: Complete status endpoints and all
             table.timestamps(true, true);
         })
 
@@ -88,7 +90,6 @@ export async function up(knex: Knex): Promise<void> {
                 {name: 'view_users', description: 'Permission to view users'},
                 {name: 'edit_users', description: 'Permission to edit users'},
                 {name: 'delete_users', description: 'Permission to delete users'},
-                {name: 'edit_roles', description: 'Permission to edit roles'},
                 {name: 'edit_systems', description: 'Permission to edit systems'},
                 {name: 'view_faults', description: 'Permission to view faults'},
                 {name: 'edit_faults', description: 'Permission to edit faults'},
