@@ -14,7 +14,6 @@ export async function up(knex: Knex): Promise<void> {
             table.string('password_hash').notNullable();
             table.jsonb('permissions').defaultTo('[]');
             table.enum('status', ['active', 'inactive','suspended']).defaultTo('active');
-            //TODO: Complete status endpoints and all
             table.timestamps(true, true);
         })
 

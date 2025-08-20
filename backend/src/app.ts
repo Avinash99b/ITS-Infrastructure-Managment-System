@@ -30,7 +30,11 @@ const swaggerOptions = {
             { url: 'https://its.api.avinash9.tech', description: 'Production Server' }
         ]
     },
-    apis: [path.join(__dirname, 'routes/V1/*.ts'),path.join(__dirname, 'routes/*.ts')], // Path to API docs
+    apis: [
+        path.join(__dirname, 'routes/V1/*.ts'),
+        path.join(__dirname, 'routes/*.ts'),
+        path.join(__dirname, 'models/*.ts') // <-- Add path to your models
+    ],
 };
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions);

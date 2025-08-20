@@ -12,6 +12,12 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PermissionModel'
  */
 router.get('/', getAllPermissions);
 

@@ -1,6 +1,12 @@
 // src/routes/faultRoutes.ts
 import { Router } from 'express';
-import { listFaults, reportFault, listFaultReports } from '../../controllers/faultController';
+import {
+    listFaults,
+    reportFault,
+    listFaultReports,
+    updateFault,
+    assignTechnician
+} from '../../controllers/faultController';
 import { requirePermission } from '../../middleware/permissionMiddleware';
 import {authenticateToken} from "../../middleware/authMiddleware";
 
@@ -127,5 +133,88 @@ router.post('/', authenticateToken, requirePermission('report_faults'), reportFa
  *         description: Forbidden (Missing permission)
  */
 router.get('/reports', authenticateToken, requirePermission('view_faults'), listFaultReports);
+
+
+/**
+ * @swagger
+ * /api/v1/faults/reports/status:
+ *   patch:
+ *     summary: Update Status of Fault Report
+ *     tags: [Fault Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *         required: true
+ *         content:
+ *          application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 description: New status for the user (e.g., pneding,in_progress,resolved)
+ *     responses:
+ *       200:
+ *         description: Updating Successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *       400:
+ *         description: Invalid query parameters
+ *       401:
+ *         description: Unauthorized (No token or invalid token)
+ *       403:
+ *         description: Forbidden (Missing permission)
+ */
+router.patch('/report/status',authenticateToken,requirePermission('update_faults'),updateFault);
+
+
+/**
+ * @swagger
+ * /api/v1/faults/reports/{reportId}/technicianId:
+ *   post:
+ *     summary: Assign a technician to a fault report
+ *     tags: [Fault Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the fault report
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               technicianId:
+ *                 type: string
+ *                 description: ID of the technician to assign
+ *     responses:
+ *       200:
+ *         description: Technician assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 assignment:
+ *                   type: object
+ *       400:
+ *         description: Invalid request or parameters
+ *       401:
+ *         description: Unauthorized (No token or invalid token)
+ *       403:
+ *         description: Forbidden (Missing permission)
+ */
+router.post('/reports/:reportId/technicianId',authenticateToken,requirePermission('assign_technician'),assignTechnician)
 
 export default router;

@@ -264,6 +264,79 @@ paths:
           description: Unauthorized (No token or invalid token)
         "403":
           description: Forbidden (Missing permission)
+  /api/v1/faults/reports/status:
+    patch:
+      summary: Update Status of Fault Report
+      tags:
+        - Fault Reports
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: New status for the user (e.g., pneding,in_progress,resolved)
+      responses:
+        "200":
+          description: Updating Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: null
+        "400":
+          description: Invalid query parameters
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+  /api/v1/faults/reports/{reportId}/technicianId:
+    post:
+      summary: Assign a technician to a fault report
+      tags:
+        - Fault Reports
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema:
+            type: string
+          description: ID of the fault report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                technicianId:
+                  type: string
+                  description: ID of the technician to assign
+      responses:
+        "200":
+          description: Technician assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  assignment:
+                    type: object
+        "400":
+          description: Invalid request or parameters
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
   /api/v1/permissions:
     get:
       summary: Get all permissions
@@ -272,6 +345,12 @@ paths:
       responses:
         "200":
           description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PermissionModel"
   /api/v1/rooms:
     get:
       summary: Get all rooms
@@ -696,7 +775,22 @@ paths:
           description: Unauthorized (No token or invalid token)
         "403":
           description: Forbidden (Missing permission)
-components: {}
+components:
+  schemas:
+    PermissionModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the permission (e.g., 'create:user').
+          example: view_faults
+        description:
+          type: string
+          description: A friendly description of what the permission allows.
+          example: Allows the user view the faults.
+      required:
+        - id
+        - name
 tags:
   - name: Auth
     description: Authentication and user management
