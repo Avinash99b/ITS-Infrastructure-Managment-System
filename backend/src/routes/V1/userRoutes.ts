@@ -5,7 +5,8 @@ import {
     getUser,
     updateUserPermissions,
     getPermissionsByUserId,
-    updateUserStatus
+    updateUserStatus,
+    getUserById
 } from '../../controllers/userController';
 import {requirePermission} from "../../middleware/permissionMiddleware";
 import {emptyMiddleware} from "../../middleware/emptyMiddleware";
@@ -19,18 +20,73 @@ const router = Router();
  * @swagger
  * /api/v1/users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users with advanced filters, search, sorting, and pagination
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of users per page
+ *       - in: query
+ *         name: range
+ *         schema:
+ *           type: string
+ *           example: "2025-07-01,2025-08-01"
+ *         description: Filter users created between two dates (YYYY-MM-DD,YYYY-MM-DD)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search users by name, email, or mobile number
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           example: "created_at"
+ *         description: Field to sort users by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort order (ascending or descending)
  *     responses:
  *       200:
- *         description: List of users
+ *         description: Paginated list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   $ref: '#/components/schemas/UserModel'
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *       400:
+ *         description: Invalid query parameters
  *       401:
  *         description: Unauthorized (No token or invalid token)
  *       403:
  *         description: Forbidden (Missing permission)
+ *       500:
+ *         description: Internal server error
  */
+
 router.get('/', authenticateToken, requirePermission('view_users'), getUsers);
 
 /**
@@ -119,6 +175,43 @@ router.patch('/permissions', authenticateToken,requirePermission('grant_permissi
  *         description: Forbidden (Missing permission)
  */
 router.get('/:id/permissions', authenticateToken, requirePermission('view_users'), getPermissionsByUserId);
+
+
+
+/**
+ * @swagger
+ * /api/v1/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponseModel'
+ *       400:
+ *         description: Invalid user ID
+ *       401:
+ *         description: Unauthorized (No token or invalid token)
+ *       403:
+ *         description: Forbidden (Missing permission)
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id', authenticateToken, requirePermission('view_users'), getUserById);
 
 /**
  * @swagger

@@ -660,18 +660,74 @@ paths:
           description: System not found
   /api/v1/users:
     get:
-      summary: Get all users
+      summary: Get all users with advanced filters, search, sorting, and pagination
       tags:
         - Users
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Number of users per page
+        - in: query
+          name: range
+          schema:
+            type: string
+            example: 2025-07-01,2025-08-01
+          description: Filter users created between two dates (YYYY-MM-DD,YYYY-MM-DD)
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search users by name, email, or mobile number
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: created_at
+          description: Field to sort users by
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+          description: Sort order (ascending or descending)
       responses:
         "200":
-          description: List of users
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    $ref: "#/components/schemas/UserModel"
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  total:
+                    type: integer
+        "400":
+          description: Invalid query parameters
         "401":
           description: Unauthorized (No token or invalid token)
         "403":
           description: Forbidden (Missing permission)
+        "500":
+          description: Internal server error
   /api/v1/users/me:
     get:
       summary: Get current user
@@ -743,6 +799,37 @@ paths:
           description: Unauthorized (No token or invalid token)
         "403":
           description: Forbidden (Missing permission)
+  /api/v1/users/{id}:
+    get:
+      summary: Get user by ID
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponseModel"
+        "400":
+          description: Invalid user ID
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
   /api/v1/users/{id}/status:
     patch:
       summary: Update user status
@@ -791,6 +878,73 @@ components:
       required:
         - id
         - name
+    UserStatus:
+      type: string
+      enum:
+        - active
+        - inactive
+        - suspended
+    UserModel:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        mobile_no:
+          type: string
+        password_hash:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - mobile_no
+        - password_hash
+        - status
+    UserResponseModel:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        mobile_no:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - mobile_no
+        - status
 tags:
   - name: Auth
     description: Authentication and user management

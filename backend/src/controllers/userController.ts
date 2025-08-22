@@ -16,48 +16,107 @@ const updateUserStatusSchema = z.object({
     status: z.enum(UserStatus),
 });
 
-// Zod schema for paging params
-const pagingSchema = z.object({
+// --- Zod schema for query params ---
+const getUsersSchema = z.object({
     page: z.string().regex(/^\d+$/).transform(Number).default(1),
-    pageSize: z.string().regex(/^\d+$/).transform(Number).default(20),
+    limit: z.string().regex(/^\d+$/).transform(Number).default(20),
+    range: z.string().optional(), // format: "YYYY-MM-DD,YYYY-MM-DD"
+    search: z.string().optional(),
+    sort: z.string().optional(), // field to sort by
+    order: z.enum(['asc', 'desc']).optional().default('asc'),
 });
 
+
 /**
- * Fetches all users from the database with paging.
- * Returns a paginated list of users with their details.
- * @param req
- * @param res
+ * GET /users
+ * Fetches users with advanced features:
+ *   - Pagination: page & limit
+ *   - Filtering: range (created_at)
+ *   - Searching: name, email, mobile_no
+ *   - Sorting: sort field & order
+ *
+ * Query parameters:
+ *   - page: number (default 1)
+ *   - limit: number (default 20)
+ *   - range: string, format "YYYY-MM-DD,YYYY-MM-DD" (optional)
+ *   - search: string, search by name, email, or mobile_no (optional)
+ *   - sort: string, column to sort by (optional)
+ *   - order: string, "asc" or "desc" (default "asc")
+ *
+ * Response:
+ *   {
+ *     users: UserModel[],
+ *     page: number,
+ *     limit: number,
+ *     total: number
+ *   }
  */
 export const getUsers = async (req: Request, res: Response) => {
-
-    const parsed = pagingSchema.safeParse(req.query);
+    const parsed = getUsersSchema.safeParse(req.query);
     if (!parsed.success) {
-        logger.warn('Invalid paging params', { errors: parsed.error.issues, user: req.user?.id });
-        return res.status(400).json({ error: 'Invalid paging params', details: parsed.error.issues.map(zodErrorMapper) });
+        logger.warn('Invalid getUsers params', { errors: parsed.error.issues, user: req.user?.id });
+        return res.status(400).json({ error: 'Invalid params', details: parsed.error.issues });
     }
 
-    const { page, pageSize } = parsed.data;
-    const offset = (page - 1) * pageSize;
+    const { page, limit, range, search, sort, order } = parsed.data;
+    const offset = (page - 1) * limit;
 
     try {
-        // Fetch paginated users from the database
-        let users = await db('users')
-            .select("*")
-            .limit(pageSize)
-            .offset(offset) as UserModel[];
-        logger.info('Fetched paginated users', { user: req.user?.id, page, pageSize });
+        // Base query
+        let query = db<UserModel>('users').select('*');
 
-        //Remove sensitive info
-        users = users.map((user)=>{user.password_hash=undefined as any;return user})
-        // Optionally, fetch total count for frontend
-        const countResult = await db('users').count<{ count: string }[]>('id as count');
-        const count = countResult[0]?.count
-        res.json({ users, page, pageSize, total: Number(count) });
+        // --- Date range filter ---
+        if (range) {
+            const [start, end] = range.split(',');
+            if (start) query = query.where('created_at', '>=', new Date(start));
+            if (end) query = query.where('created_at', '<=', new Date(end));
+        }
+
+        // --- Search filter ---
+        if (search) {
+            query = query.where(function () {
+                this.where('name', 'like', `%${search}%`)
+                    .orWhere('email', 'like', `%${search}%`)
+                    .orWhere('mobile_no', 'like', `%${search}%`);
+            });
+        }
+
+        // --- Sorting ---
+        if (sort) {
+            query = query.orderBy(sort, order);
+        }
+
+        // --- Pagination ---
+        const users = await query.limit(limit).offset(offset);
+
+        // Remove sensitive info
+        const safeUsers = users.map(user => ({ ...user, password_hash: undefined }));
+
+        // --- Total count ---
+        let countQuery = db<UserModel>('users');
+        if (range) {
+            const [start, end] = range.split(',');
+            if (start) countQuery = countQuery.where('created_at', '>=', new Date(start));
+            if (end) countQuery = countQuery.where('created_at', '<=', new Date(end));
+        }
+        if (search) {
+            countQuery = countQuery.where(function () {
+                this.where('name', 'like', `%${search}%`)
+                    .orWhere('email', 'like', `%${search}%`)
+                    .orWhere('mobile_no', 'like', `%${search}%`);
+            });
+        }
+        const countResult = await countQuery.count<{ count: string }[]>('id as count');
+        const total = Number(countResult[0]?.count || 0);
+
+        res.json({ users: safeUsers, page, limit, total });
+        logger.info('Fetched users', { user: req.user?.id, page, limit, range, search, sort, order });
     } catch (err) {
         logger.error('Failed to fetch users', { error: err, user: req.user?.id });
         res.status(500).json({ error: 'Failed to fetch users', details: err });
     }
 };
+
 /**
  * Fetches the current user's permissions.
  * Expects the user to be authenticated and available in req.user.
@@ -255,5 +314,52 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     } catch (err) {
         logger.error('Failed to update user status', { error: err, user: req.user?.id });
         res.status(500).json({ error: 'Failed to update user status', details: err });
+    }
+};
+
+/**
+ * GET /users/:id
+ * Fetch a user by ID
+ *
+ * Params:
+ *   - id: string (user ID)
+ *
+ * Response:
+ *   {
+ *     id: number,
+ *     name: string,
+ *     email: string,
+ *     mobile_no: string,
+ *     permissions: string[],
+ *     status: string,
+ *     created_at: string,
+ *     updated_at: string
+ *   }
+ */
+const userIdParamSchema = z.object({
+    id: z.string().regex(/^\d+$/).transform(Number).refine(val => Number.isInteger(val) && val > 0, {
+        message: "User ID must be an integer above 0"
+    })
+});
+export const getUserById = async (req: Request, res: Response) => {
+    const parsed = userIdParamSchema.safeParse(req.params);
+    if (!parsed.success) {
+        logger.warn('Invalid user ID param', { errors: parsed.error.issues, user: req.user?.id });
+        return res.status(400).json({ error: 'Invalid user ID', details: parsed.error.issues.map(zodErrorMapper) });
+    }
+    const { id } = parsed.data;
+    try {
+        const user = await db<UserModel>('users').where({ id }).first();
+        if (!user) {
+            logger.info('User not found', { id, user: req.user?.id });
+            return res.status(404).json({ error: 'User not found' });
+        }
+        // Remove sensitive info
+        const { password_hash, ...safeUser } = user;
+        res.json(safeUser);
+        logger.info('Fetched user by ID', { id, user: req.user?.id });
+    } catch (err) {
+        logger.error('Failed to fetch user by ID', { error: err, id, user: req.user?.id });
+        res.status(500).json({ error: 'Failed to fetch user', details: err });
     }
 };
