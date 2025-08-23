@@ -11,6 +11,7 @@ export async function up(knex: Knex): Promise<void> {
             table.string('name').notNullable();
             table.string('email').unique().notNullable();
             table.string('mobile_no').notNullable();
+            table.string('image_url').nullable().defaultTo('https://avatar.iran.liara.run/public');
             table.string('password_hash').notNullable();
             table.jsonb('permissions').defaultTo('[]');
             table.enum('status', ['active', 'inactive','suspended']).defaultTo('active');

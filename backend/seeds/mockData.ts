@@ -21,7 +21,7 @@ exports.seed = async function (knex:Knex) {
             name: faker.person.fullName(),
             email: faker.internet.email(),
             mobile_no: faker.number.int({ min: 6000000000, max: 9999999999 }).toString(),
-            password_hash: bcrypt.hash(faker.helpers.arrayElement([
+            password_hash: await bcrypt.hash(faker.helpers.arrayElement([
                 'Desktop@99',
                 "Desktop@9502"
             ]),10), // mock hash

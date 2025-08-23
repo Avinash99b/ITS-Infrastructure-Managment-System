@@ -363,3 +363,33 @@ export const getUserById = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch user', details: err });
     }
 };
+
+/**
+ * GET /users/:id/profile
+ * Fetches public profile information for a user by ID.
+ * No authentication required.
+ *
+ * Params:
+ *   - id: string (user ID)
+ *
+ * Response:
+ *   {
+ *     name: string,
+ *     image_url: string | null
+ *   }
+ *
+ * Errors:
+ *   404: User not found
+ */
+export const getUserProfile = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        const user = await db('users').select('name', 'image_url').where({ id }).first();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json({ name: user.name, image_url: user.image_url ?? null });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user profile', details: err });
+    }
+};

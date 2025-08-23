@@ -6,7 +6,8 @@ import {
     updateUserPermissions,
     getPermissionsByUserId,
     updateUserStatus,
-    getUserById
+    getUserById,
+    getUserProfile
 } from '../../controllers/userController';
 import {requirePermission} from "../../middleware/permissionMiddleware";
 import {emptyMiddleware} from "../../middleware/emptyMiddleware";
@@ -248,6 +249,39 @@ router.get('/:id', authenticateToken, requirePermission('view_users'), getUserBy
  *         description: Forbidden (Missing permission)
  */
 router.patch('/:id/status', authenticateToken, requirePermission('edit_users'), updateUserStatus);
+
+/**
+ * @swagger
+ * /api/v1/users/{id}/profile:
+ *   get:
+ *     summary: Get public profile information for a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Public profile information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 image_url:
+ *                   type: string
+ *                   nullable: true
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/profile', getUserProfile);
 
 
 export default router;

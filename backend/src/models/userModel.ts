@@ -17,6 +17,8 @@
  *           type: string
  *         email:
  *           type: string
+ *         image_url:
+ *           type: string
  *         mobile_no:
  *           type: string
  *         password_hash:
@@ -51,6 +53,8 @@
  *         id:
  *           type: integer
  *         name:
+ *           type: string
+ *         image_url:
  *           type: string
  *         email:
  *           type: string
@@ -89,6 +93,7 @@ export interface UserModel {
     email: string;
     mobile_no: string;
     password_hash: string;
+    image_url:string;
     permissions?: string[];
     status: UserStatus;
     created_at?: Date;

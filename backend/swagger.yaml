@@ -24,7 +24,7 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                mobile_no:
                   type: string
                 password:
                   type: string
@@ -45,10 +45,19 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                name:
                   type: string
+                  description: Full name of the user
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the user
+                mobile_no:
+                  type: string
+                  description: Mobile number of the user
                 password:
                   type: string
+                  description: Password for the account
       responses:
         "201":
           description: User registered
@@ -862,6 +871,35 @@ paths:
           description: Unauthorized (No token or invalid token)
         "403":
           description: Forbidden (Missing permission)
+  /api/v1/users/{id}/profile:
+    get:
+      summary: Get public profile information for a user
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        "200":
+          description: Public profile information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  image_url:
+                    type: string
+                    nullable: true
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
 components:
   schemas:
     PermissionModel:
@@ -893,6 +931,8 @@ components:
           type: string
         email:
           type: string
+        image_url:
+          type: string
         mobile_no:
           type: string
         password_hash:
@@ -922,6 +962,8 @@ components:
         id:
           type: integer
         name:
+          type: string
+        image_url:
           type: string
         email:
           type: string
