@@ -18,7 +18,7 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               mobile_no:
  *                 type: string
  *               password:
  *                 type: string
