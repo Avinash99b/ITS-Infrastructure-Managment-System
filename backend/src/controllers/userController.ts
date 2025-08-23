@@ -26,6 +26,11 @@ const getUsersSchema = z.object({
     order: z.enum(['asc', 'desc']).optional().default('asc'),
 });
 
+// Zod schema for user ID param
+const userIdParamSchema = z.object({
+    id: z.int().min(1)
+});
+
 
 /**
  * GET /users
@@ -336,13 +341,13 @@ export const updateUserStatus = async (req: Request, res: Response) => {
  *     updated_at: string
  *   }
  */
-const userIdParamSchema = z.object({
+const userIdParamSchemaForGetUserById = z.object({
     id: z.string().regex(/^\d+$/).transform(Number).refine(val => Number.isInteger(val) && val > 0, {
         message: "User ID must be an integer above 0"
     })
 });
 export const getUserById = async (req: Request, res: Response) => {
-    const parsed = userIdParamSchema.safeParse(req.params);
+    const parsed = userIdParamSchemaForGetUserById.safeParse(req.params);
     if (!parsed.success) {
         logger.warn('Invalid user ID param', { errors: parsed.error.issues, user: req.user?.id });
         return res.status(400).json({ error: 'Invalid user ID', details: parsed.error.issues.map(zodErrorMapper) });
@@ -370,7 +375,7 @@ export const getUserById = async (req: Request, res: Response) => {
  * No authentication required.
  *
  * Params:
- *   - id: string (user ID)
+ *   - id: int (user ID)
  *
  * Response:
  *   {
@@ -382,7 +387,12 @@ export const getUserById = async (req: Request, res: Response) => {
  *   404: User not found
  */
 export const getUserProfile = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    // Validate 'id' param using Zod
+    const parsed = userIdParamSchema.safeParse(req.params);
+    if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid user ID', details: parsed.error.issues });
+    }
+    const { id } = parsed.data;
     try {
         const user = await db('users').select('name', 'image_url').where({ id }).first();
         if (!user) {
