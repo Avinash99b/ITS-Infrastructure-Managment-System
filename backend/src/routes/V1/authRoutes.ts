@@ -38,10 +38,19 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               name:
  *                 type: string
+ *                 description: Full name of the user
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address of the user
+ *               mobile_no:
+ *                 type: string
+ *                 description: Mobile number of the user
  *               password:
  *                 type: string
+ *                 description: Password for the account
  *     responses:
  *       201:
  *         description: User registered
