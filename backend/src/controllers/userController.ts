@@ -4,6 +4,9 @@ import db from "../components/db";
 import {z} from 'zod';
 import logger from '../components/logger';
 import zodErrorMapper from "../components/zodErrorMapper";
+import {FileHandler} from '../components/fileHandler';
+import path from 'path';
+import fs from "fs";
 
 
 // Zod validation schema
@@ -408,5 +411,85 @@ export const getUserProfile = async (req: Request, res: Response) => {
         res.json({ name: user.name, image_url: user.image_url ?? null });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch user profile', details: err });
+    }
+};
+
+// Zod schema for profile image update
+const updateProfileImageSchema = z.object({
+    file: z.any()
+});
+
+
+
+export async function updateUserProfileImage(req: Request, res: Response) {
+    try {
+        const fileHandler = new FileHandler({visibilityPublic:true,uploadDir:"profileImages"});
+        // Multer places file in req.file
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({error: 'Unauthorized'});
+        }
+        if (!req.file) {
+            return res.status(400).json({error: 'No file uploaded'});
+        }
+        // Validate file type (basic check)
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+            return res.status(400).json({error: 'Invalid file type'});
+        }
+        //Delete previous image starting with user_${userId}
+        const possibleCombinations = [`user_${userId}.png`, `user_${userId}.jpg`, `user_${userId}.jpeg`]
+        for (const combination of possibleCombinations) {
+            await fileHandler.deleteFile("profileImages/" + combination);
+        }
+        // Save file
+        const filename = `user_${userId}${path.extname(req.file.originalname)}`;
+        await fileHandler.saveFile(filename, req.file.buffer);
+        const imageUrl = fileHandler.getFileUrl(filename);
+        // Update user in DB
+        await db('users').where({id: userId}).update({image_url: imageUrl});
+        return res.json({profileImageUrl: imageUrl});
+    } catch (err) {
+        logger.error('Error updating profile image', err);
+        return res.status(500).json({error: 'Internal server error'});
+    }
+}
+
+// Zod schema for updating username and email
+const updateUserSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    email: z.email().optional()
+});
+
+export const updateCurrentUser = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        return res.status(401).json({error: 'Unauthorized'});
+    }
+    const parsed = updateUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({error: 'Invalid input', details: parsed.error.issues.map(zodErrorMapper)});
+    }
+    const { name, email } = parsed.data;
+    if (!name && !email) {
+        return res.status(400).json({error: 'No fields to update'});
+    }
+    try {
+        await db('users').where({id: userId}).update({
+            ...(name && {name}),
+            ...(email && {email})
+        });
+        const updatedUser = await db('users').where({id: userId}).first();
+        if (!updatedUser) {
+            return res.status(404).json({error: 'User not found'});
+        }
+        // Remove sensitive info
+        updatedUser.password_hash = undefined;
+        updatedUser.created_at = undefined;
+        updatedUser.updated_at = undefined;
+        res.json({user: updatedUser});
+    } catch (err) {
+        logger.error('Failed to update user', {error: err, user: userId});
+        res.status(500).json({error: 'Failed to update user', details: err});
     }
 };

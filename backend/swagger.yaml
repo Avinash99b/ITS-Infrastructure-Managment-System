@@ -750,6 +750,41 @@ paths:
           description: Current user details
         "401":
           description: Unauthorized (No token or invalid token)
+    patch:
+      summary: Update current user's name and email
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  example: john@example.com
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/UserModel"
+        "400":
+          description: Invalid input or no fields to update
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
   /api/v1/users/me/permissions:
     get:
       summary: Get current user's permissions
@@ -897,6 +932,39 @@ paths:
                     nullable: true
         "404":
           description: User not found
+        "500":
+          description: Internal server error
+  /api/v1/users/me/profile-image:
+    patch:
+      summary: Update current user's profile image
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Profile image updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profileImageUrl:
+                    type: string
+        "400":
+          description: No file uploaded or invalid file type
+        "401":
+          description: Unauthorized
         "500":
           description: Internal server error
 components:

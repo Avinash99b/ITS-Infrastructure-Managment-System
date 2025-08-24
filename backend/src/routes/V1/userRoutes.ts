@@ -7,15 +7,19 @@ import {
     getPermissionsByUserId,
     updateUserStatus,
     getUserById,
-    getUserProfile
+    getUserProfile,
+    updateUserProfileImage,
+    updateCurrentUser
 } from '../../controllers/userController';
 import {requirePermission} from "../../middleware/permissionMiddleware";
 import {emptyMiddleware} from "../../middleware/emptyMiddleware";
 import {authenticateToken} from "../../middleware/authMiddleware";
+import multer from 'multer';
 
 const isDev = process.env.NODE_ENV === 'development';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * @swagger
@@ -280,6 +284,83 @@ router.patch('/:id/status', authenticateToken, requirePermission('edit_users'), 
  *         description: Internal server error
  */
 router.get('/:id/profile', getUserProfile);
+
+/**
+ * @swagger
+ * /api/v1/users/me/profile-image:
+ *   patch:
+ *     summary: Update current user's profile image
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Profile image updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profileImageUrl:
+ *                   type: string
+ *       400:
+ *         description: No file uploaded or invalid file type
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.patch('/me/profile-image', authenticateToken, upload.single('file'), updateUserProfileImage);
+
+/**
+ * @swagger
+ * /api/v1/users/me:
+ *   patch:
+ *     summary: Update current user's name and email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "John Doe"
+ *               email:
+ *                 type: string
+ *                 example: "john@example.com"
+ *     responses:
+ *       200:
+ *         description: User updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/UserModel'
+ *       400:
+ *         description: Invalid input or no fields to update
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.patch('/me', authenticateToken, updateCurrentUser);
 
 
 export default router;

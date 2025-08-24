@@ -48,6 +48,7 @@ fs.writeFileSync('./swagger.yaml', yamlSpec, 'utf8');
 
 console.log('✅ swagger.yaml generated!');
 
+app.use('/files', express.static(path.join(__dirname,'../uploads/public')))
 app.use('/api', ApiVersionRouter);
 
 // Catch-all 404 handler
