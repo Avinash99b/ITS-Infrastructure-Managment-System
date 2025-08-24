@@ -1,0 +1,57 @@
+name: Deploy Backend (Self-hosted)
+
+on:
+  push:
+    paths:
+      - "backend/**"   # Trigger only if backend folder changed
+
+jobs:
+  deploy-backend:
+    runs-on: its-backend   # self-hosted runner name
+    if: startsWith(github.event.head_commit.message, 'Deploy:')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Ensure env file exists securely on server (not in repo)
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f ~/env/.env.prod ]; then
+            echo "❌ Environment file missing at ~/env/.env.prod"
+            exit 1
+          fi
+          echo "✅ Environment file found"
+
+      - name: Stop and remove old container
+        run: |
+          if [ "$(docker ps -q -f name=its-backend-runner)" ]; then
+            echo "Stopping existing container..."
+            docker stop its-backend-runner || true
+            docker rm its-backend-runner || true
+          else
+            echo "No running container found"
+          fi
+
+      - name: Remove old image safely
+        run: |
+          if [ "$(docker images -q its-backend)" ]; then
+            echo "Removing old image..."
+            docker rmi its-backend || true
+          else
+            echo "No old image found"
+          fi
+
+      - name: Build new backend image
+        run: |
+          cd backend
+          docker build -t its-backend .
+
+      - name: Run new backend container
+        run: |
+          docker run -d \
+            --name its-backend-runner \
+            --restart=always \                   # auto-restart if server reboots
+            --env-file ~/env/.env.prod \
+            -p 3000:3000 \
+            its-backend
