@@ -36,8 +36,9 @@ exports.seed = async function (knex:Knex) {
                         'edit_faults',
                         'grant_permissions',
                         'edit_rooms',
+                        'edit_blocks'
                     ],
-                    { min: 1, max: 3 }
+                    { min: 2, max: 6}
                 )
             ),
             status: faker.helpers.arrayElement(['active', 'inactive', 'suspended']),

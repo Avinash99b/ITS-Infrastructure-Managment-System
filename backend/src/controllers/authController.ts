@@ -48,6 +48,9 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({message: 'Invalid credentials'});
         }
 
+        if(user.status!="active"){
+            return res.status(401).json({message: 'User is not active, Please Contact admin to unblock account'});
+        }
         // Remove password from user object
         user.password_hash = undefined as any;
         const token = jwt.sign(user, JWT_SECRET, {expiresIn: '1d'});

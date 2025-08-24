@@ -93,6 +93,7 @@ export async function up(knex: Knex): Promise<void> {
                 {name: 'edit_systems', description: 'Permission to edit systems'},
                 {name: 'view_faults', description: 'Permission to view faults'},
                 {name: 'edit_faults', description: 'Permission to edit faults'},
+                {name: 'edit_blocks', description: 'Permission to edit blocks'},
                 {name: '*', description: 'All permissions, use with caution'},
                 {
                     name: 'grant_permissions',
