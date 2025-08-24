@@ -94,7 +94,7 @@ export interface UserModel {
     mobile_no: string;
     password_hash: string;
     image_url:string;
-    permissions?: string[];
+    permissions: string[];
     status: UserStatus;
     created_at?: Date;
     updated_at?: Date;

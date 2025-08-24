@@ -53,7 +53,7 @@ export const login = async (req: Request, res: Response) => {
         }
         // Remove password from user object
         user.password_hash = undefined as any;
-        const token = jwt.sign(user, JWT_SECRET, {expiresIn: '1d'});
+        const token = jwt.sign({...user,permissions:undefined}, JWT_SECRET, {expiresIn: '1d'});
         res.json({token, user});
     } catch (err) {
         console.error('Login error:', err);
@@ -89,6 +89,7 @@ export const register = async (req: Request, res: Response) => {
         const user = result.rows[0];
         // Remove password from user object
         delete user.password;
+        delete user.permissions;
         const token = jwt.sign(user, JWT_SECRET, {expiresIn: '1d'});
         res.status(201).json({token, user});
     } catch (err) {

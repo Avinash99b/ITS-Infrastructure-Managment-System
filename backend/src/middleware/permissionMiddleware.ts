@@ -1,10 +1,14 @@
 // src/middleware/permissionMiddleware.ts
 import {Request, Response, NextFunction} from 'express';
+import db from "../components/db";
+import {UserModel} from "../models/userModel";
+import {getPermissionsForUser} from "../controllers/userController";
 
 export function requirePermission(permission: string) {
-    return (req: Request, res: Response, next: NextFunction) => {
-        // Assume req.user.permissions is an array of strings
-        const userPermissions = req.user?.permissions || [];
+    return async (req: Request, res: Response, next: NextFunction) => {
+        if(!req.user?.id)
+            return res.status(400).json({error: 'User ID is required'});
+        const userPermissions = await getPermissionsForUser(req.user?.id)
 
         //Fetch permissions based on role_id if available
         if (userPermissions.includes(permission) || userPermissions.includes("*")) {

@@ -33,7 +33,7 @@ exports.seed = async function (knex:Knex) {
                         'delete_users',
                         'edit_systems',
                         'view_faults',
-                        'edit_faults',
+                        'update_fault_report',
                         'grant_permissions',
                         'edit_rooms',
                         'edit_blocks'

@@ -28,7 +28,7 @@ router.get('/', listFaults);
 
 /**
  * @swagger
- * /api/v1/faults:
+ * /api/v1/faults/report:
  *   post:
  *     summary: Report a fault
  *     tags: [Faults]
@@ -69,7 +69,7 @@ router.get('/', listFaults);
  *       403:
  *         description: Forbidden (Missing permission)
  */
-router.post('/', authenticateToken, requirePermission('report_faults'), reportFault);
+router.post('/report',authenticateToken, reportFault);
 
 /**
  * @swagger
@@ -168,7 +168,7 @@ router.get('/reports', authenticateToken, requirePermission('view_faults'), list
  *       403:
  *         description: Forbidden (Missing permission)
  */
-router.patch('/report/status',authenticateToken,requirePermission('update_faults'),updateFault);
+router.patch('/report/status',authenticateToken,requirePermission('update_fault_report'),updateFault);
 
 
 /**

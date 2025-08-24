@@ -31,6 +31,10 @@ const userIdParamSchema = z.object({
     id: z.coerce.number().min(1)
 });
 
+export async function getPermissionsForUser(userId:number){
+    const user = await db<UserModel>('users').where({id: userId}).first() as UserModel;
+    return user.permissions
+}
 
 /**
  * GET /users
@@ -131,7 +135,10 @@ export const getUsers = async (req: Request, res: Response) => {
  */
 export const getUserPermissions = (req: Request, res: Response) => {
     try {
-        const userPermissions = req.user?.permissions || [];
+        if(!req.user?.id)
+            return res.status(400).json({error: 'User ID is required'});
+
+        const userPermissions = getPermissionsForUser(req.user?.id);
         logger.info('Fetched user permissions', {user: req.user?.id});
 
         res.json(userPermissions);

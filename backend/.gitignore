@@ -5,3 +5,4 @@ dist
 tmpScripts
 logs
 .env.prod
+service-account.json

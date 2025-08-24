@@ -159,8 +159,6 @@ router.patch('/permissions', authenticateToken,requirePermission('grant_permissi
  *   get:
  *     summary: Get permissions by user ID
  *     tags: [Users]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -175,7 +173,7 @@ router.patch('/permissions', authenticateToken,requirePermission('grant_permissi
  *       403:
  *         description: Forbidden (Missing permission)
  */
-router.get('/:id/permissions', authenticateToken, requirePermission('view_users'), getPermissionsByUserId);
+router.get('/:id/permissions', getPermissionsByUserId);
 
 
 
