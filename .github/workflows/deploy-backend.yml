@@ -4,17 +4,17 @@ on:
   push:
     paths:
       - "backend/**"   # Trigger only if backend folder changed
+  workflow_dispatch:
 
 jobs:
   deploy-backend:
     runs-on: its-backend   # self-hosted runner name
-    if: startsWith(github.event.head_commit.message, 'Deploy:')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'Deploy:')
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Ensure env file exists securely on server (not in repo)
       - name: Ensure .env file exists
         run: |
           if [ ! -f ~/env/.env.prod ]; then
@@ -37,7 +37,7 @@ jobs:
         run: |
           if [ "$(docker images -q its-backend)" ]; then
             echo "Removing old image..."
-            docker rmi its-backend || true
+            docker rmi -f its-backend || true
           else
             echo "No old image found"
           fi
@@ -51,7 +51,7 @@ jobs:
         run: |
           docker run -d \
             --name its-backend-runner \
-            --restart=always \                   # auto-restart if server reboots
+            --restart=always \
             --env-file ~/env/.env.prod \
             -p 3000:3000 \
             its-backend
