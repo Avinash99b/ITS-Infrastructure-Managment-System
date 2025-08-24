@@ -28,7 +28,7 @@ const getUsersSchema = z.object({
 
 // Zod schema for user ID param
 const userIdParamSchema = z.object({
-    id: z.int().min(1)
+    id: z.coerce.number().min(1)
 });
 
 
