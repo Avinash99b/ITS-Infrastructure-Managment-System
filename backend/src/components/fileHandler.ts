@@ -27,7 +27,7 @@ export class FileHandler {
 
     private readonly relativePath: string | undefined;
 
-    private readonly BASE_URL = "https://f19c5f75fffa.ngrok-free.app"
+    private readonly BASE_URL = "https://advanced-shepherd-pleasantly.ngrok-free.app"
     constructor(options: FileHandlerOptions) {
 
         this.uploadDir = this.BASE_UPLOADS_DIR

@@ -80,6 +80,7 @@ exports.seed = async function (knex:Knex) {
     const systems = [];
     for (let i = 0; i < 50; i++) {
         systems.push({
+            name: `M-`+faker.number.int(),
             disk_serial_no: faker.string.alphanumeric(12).toUpperCase(),
             room_id: faker.helpers.arrayElement(insertedRooms).id,
             type: faker.helpers.arrayElement(['spare', 'using']),

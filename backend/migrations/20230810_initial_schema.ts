@@ -41,6 +41,7 @@ export async function up(knex: Knex): Promise<void> {
 
         // Systems table
         .createTable('systems', (table) => {
+            table.string('name').nullable()
             table.string('disk_serial_no').primary();
             table.integer('room_id').unsigned().nullable().references('id').inTable('rooms').onDelete('SET NULL');
             table.enu('type', ['spare', 'using']).notNullable().defaultTo('using');

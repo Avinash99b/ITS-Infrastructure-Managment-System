@@ -30,11 +30,12 @@ const updateSpeedSchema = z.object({
 });
 
 const listSystemsQuerySchema = z.object({
-    page: z.string().regex(/^\d+$/).transform(Number).optional(),
-    limit: z.string().regex(/^\d+$/).transform(Number).optional(),
-    room_id: z.string().regex(/^\d+$/).transform(Number).optional(),
+    page: z.string().regex(/^[\d]+$/).transform(Number).optional(),
+    limit: z.string().regex(/^[\d]+$/).transform(Number).optional(),
+    room_id: z.string().regex(/^[\d]+$/).transform(Number).optional(),
     status: z.enum([...SystemStatuses]).optional(),
-    type: z.enum([...SystemTypes]).optional()
+    type: z.enum([...SystemTypes]).optional(),
+    search: z.string().optional() // Added search param
 });
 
 export const listSystems = async (req: Request, res: Response) => {
@@ -48,7 +49,7 @@ export const listSystems = async (req: Request, res: Response) => {
                 details: parsed.error.issues.map(zodErrorMapper)
             });
         }
-        const {page = 1, limit = 20, room_id, status, type} = parsed.data;
+        const {page = 1, limit = 20, room_id, status, type, search} = parsed.data;
         const offset = (page - 1) * limit;
 
         // Filters
@@ -62,12 +63,26 @@ export const listSystems = async (req: Request, res: Response) => {
         if (type !== undefined) {
             query = query.where('type', type);
         }
+        if (search !== undefined && search.trim() !== '') {
+            query = query.where(function() {
+                this.where('disk_serial_no', 'like', `%${search}%`)
+                    .orWhere('type', 'like', `%${search}%`)
+                    .orWhere('status', 'like', `%${search}%`);
+            });
+        }
 
         // Get total count for pagination
         const countQuery = db('systems');
         if (room_id !== undefined) countQuery.where('room_id', room_id);
         if (status !== undefined) countQuery.where('status', status);
         if (type !== undefined) countQuery.where('type', type);
+        if (search !== undefined && search.trim() !== '') {
+            countQuery.where(function() {
+                this.where('disk_serial_no', 'like', `%${search}%`)
+                    .orWhere('type', 'like', `%${search}%`)
+                    .orWhere('status', 'like', `%${search}%`);
+            });
+        }
         const countResult = await countQuery.count('disk_serial_no as count');
         const total = countResult[0]?.count ? Number(countResult[0].count) : 0;
 

@@ -42,6 +42,11 @@ const router = Router();
  *           type: string
  *           enum: [spare, using]
  *         description: Filter by system type (optional)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter systems by disk_serial_no, type, or status (optional)
  *     responses:
  *       200:
  *         description: List of systems

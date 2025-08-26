@@ -448,7 +448,7 @@ export async function updateUserProfileImage(req: Request, res: Response) {
         const imageUrl = fileHandler.getFileUrl(filename);
         // Update user in DB
         await db('users').where({id: userId}).update({image_url: imageUrl});
-        return res.json({profileImageUrl: imageUrl});
+        return res.json({...req.user,image_url:imageUrl});
     } catch (err) {
         logger.error('Error updating profile image', err);
         return res.status(500).json({error: 'Internal server error'});
