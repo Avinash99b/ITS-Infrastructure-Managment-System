@@ -1,0 +1,48 @@
+name: Deploy Frontend (Self-hosted)
+
+on:
+  push:
+    paths:
+      - "frontend/**"   # Trigger only if frontend folder changed
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend:
+    runs-on: its-frontend   # self-hosted runner name
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'Deploy:')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Stop and remove old container
+        run: |
+          if [ "$(docker ps -q -f name=its-frontend-runner)" ]; then
+            echo "Stopping existing container..."
+            docker stop its-frontend-runner || true
+            docker rm its-frontend-runner || true
+          else
+            echo "No running container found"
+          fi
+
+      - name: Remove old image safely
+        run: |
+          if [ "$(docker images -q its-frontend)" ]; then
+            echo "Removing old image..."
+            docker rmi -f its-frontend || true
+          else
+            echo "No old image found"
+          fi
+
+      - name: Build new frontend image
+        run: |
+          cd frontend
+          docker build -t its-frontend .
+
+      - name: Run new frontend container
+        run: |
+          docker run -d \
+            --name its-frontend-runner \
+            --restart=always \
+            -p 9000:3000 \
+            its-frontend
