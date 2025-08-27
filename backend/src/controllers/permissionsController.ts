@@ -11,7 +11,7 @@ const permissionSchema = z.object({
 export const getAllPermissions = async (_req: Request, res: Response) => {
   try {
     // Fetch all permissions from the database where the name is not 'admin'
-    const permissions = await db('permissions').select(['name','description']).whereNot('name', '*');
+    const permissions = await db('permissions').select(['name','description']);
     if (permissions.length === 0) {
       return res.status(404).json({ error: 'No permissions found' });
     }

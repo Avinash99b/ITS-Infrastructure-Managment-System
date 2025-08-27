@@ -26,14 +26,6 @@ const assignTechnicianSchema = z.object({
     technicianId: z.number()
 })
 
-const listFaultReportsQuerySchema = z.object({
-    page: z.string().optional(),
-    limit: z.string().optional(),
-    status: z.string().optional(),
-    system_disk_serial_no: z.string().optional(),
-    reported_by: z.string().regex(/^\d+$/, 'reported_by must be a valid user id').optional(),
-});
-
 export const listFaults = async (req: Request, res: Response) => {
     try {
         const faults = await db("faults").select("*");
@@ -57,8 +49,8 @@ export const reportFault = async (req: Request, res: Response) => {
     try {
 
         //Check if system exists
-        const result = await db('systems').where({disk_serial_no:system_disk_serial_no}).first() as System
-        if(!result){
+        const result = await db('systems').where({disk_serial_no: system_disk_serial_no}).first() as System
+        if (!result) {
             return res.status(404).json({error: "System Not Found"})
         }
         const [insertResult] = await db("fault_reports")
@@ -71,7 +63,7 @@ export const reportFault = async (req: Request, res: Response) => {
             })
             .returning("id");
 
-        const report = await db("fault_reports").where({id:insertResult.id}).first();
+        const report = await db("fault_reports").where({id: insertResult.id}).first();
         res.status(201).json({message: "Fault reported successfully", report});
     } catch (error) {
         console.log(error)
@@ -79,15 +71,23 @@ export const reportFault = async (req: Request, res: Response) => {
     }
 };
 
+const listFaultReportsQuerySchema = z.object({
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    status: z.enum(["pending","in_progress","resolved"]).optional(),
+    system_disk_serial_no: z.string().optional(),
+    reported_by: z.string().regex(/^\d+$/, 'reported_by must be a valid user id').optional(),
+});
+
 export const listFaultReports = async (req: Request, res: Response) => {
     // Validate query params
     const parseResult = listFaultReportsQuerySchema.safeParse(req.query);
     if (!parseResult.success) {
         const errors = parseResult.error.issues.map(zodErrorMapper);
-        return res.status(400).json({ error: "Validation failed", details: errors });
+        return res.status(400).json({error: "Validation failed", details: errors});
     }
 
-    const { page = 1, limit = 20, status, system_disk_serial_no, reported_by } = parseResult.data;
+    const {page = 1, limit = 20, status, system_disk_serial_no, reported_by} = parseResult.data;
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 20;
     const offset = (pageNum - 1) * limitNum;
@@ -115,17 +115,22 @@ export const listFaultReports = async (req: Request, res: Response) => {
                 db.raw("technicians.id as technician_id"),
                 db.raw("technicians.name as technician_name"),
                 db.raw("technicians.image_url as technician_image_url")
-            )
-            .offset(offset)
+            );
+
+        if (filters.status) {
+            query = query
+                .where("fault_reports.status", filters.status)
+        }
+        query = query.offset(offset)
             .limit(limitNum)
             .orderBy("fault_reports.reported_at", "desc");
 
         const data = await query;
 
-        return res.status(200).json({ data, total, page: pageNum, limit: limitNum });
+        return res.status(200).json({data, total, page: pageNum, limit: limitNum});
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: "Failed to fetch fault reports", details: String(error) });
+        return res.status(500).json({error: "Failed to fetch fault reports", details: String(error)});
     }
 };
 
@@ -171,8 +176,8 @@ export const assignTechnician = async (req: Request, res: Response) => {
     const {technicianId} = parseResult.data;
 
     const fault_id = Number(req.params.reportId)
-    if(!fault_id){
-        return res.status(400).json({error:"Fault Id is required"})
+    if (!fault_id) {
+        return res.status(400).json({error: "Fault Id is required"})
     }
     try {
         const faultReportResult = await db("fault_reports").where({id: fault_id}).first() as FaultReport;

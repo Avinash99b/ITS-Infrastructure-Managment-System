@@ -28,16 +28,53 @@ const updateSpeedSchema = z.object({
     download_speed_mbps: z.number().optional(),
     ping_ms: z.number().optional()
 });
-
+// --- Zod schema for query params ---
 const listSystemsQuerySchema = z.object({
-    page: z.string().regex(/^[\d]+$/).transform(Number).optional(),
-    limit: z.string().regex(/^[\d]+$/).transform(Number).optional(),
-    room_id: z.string().regex(/^[\d]+$/).transform(Number).optional(),
+    page: z.string().regex(/^\d+$/).transform(Number).optional(),
+    limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+    room_id: z.string().regex(/^\d+$/).transform(Number).optional(),
+    block_id: z.string().regex(/^\d+$/).transform(Number).optional(),
+    floor: z.string().optional(), // NEW: filter by floor
     status: z.enum([...SystemStatuses]).optional(),
     type: z.enum([...SystemTypes]).optional(),
-    search: z.string().optional() // Added search param
+    search: z.string().optional()
 });
 
+/**
+ * GET /systems
+ *
+ * Lists systems with optional filters and pagination.
+ *
+ * Query Parameters:
+ * - page (number, optional, default=1) → Page number.
+ * - limit (number, optional, default=20) → Items per page.
+ * - room_id (number, optional) → Filter systems by room ID.
+ * - block_id (number, optional) → Filter systems by block ID.
+ * - floor (string, optional) → Filter systems by floor (exact match).
+ * - status (enum, optional) → Filter by system status.
+ * - type (enum, optional) → Filter by system type.
+ * - search (string, optional) → Fuzzy match on disk_serial_no, type, name, status, or floor.
+ *
+ * Response:
+ * {
+ *   data: [
+ *     {
+ *       id: number,
+ *       name: string,
+ *       disk_serial_no: string,
+ *       status: string,
+ *       type: string,
+ *       room_id: number | null,   // joined from rooms
+ *       block_id: number | null,  // joined from rooms
+ *       floor: string | null,     // joined from rooms
+ *       ... other system fields ...
+ *     }
+ *   ],
+ *   page: number,
+ *   limit: number,
+ *   total: number
+ * }
+ */
 export const listSystems = async (req: Request, res: Response) => {
     try {
         // Validate query params
@@ -49,45 +86,72 @@ export const listSystems = async (req: Request, res: Response) => {
                 details: parsed.error.issues.map(zodErrorMapper)
             });
         }
-        const {page = 1, limit = 20, room_id, status, type, search} = parsed.data;
+
+        const {page = 1, limit = 20, room_id, block_id, floor, status, type, search} = parsed.data;
         const offset = (page - 1) * limit;
 
-        // Filters
-        let query = db('systems').select('*');
+        // Base query with LEFT JOIN to attach block_id & floor from rooms
+        let query = db('systems')
+            .select(
+                'systems.*',
+                'rooms.id as room_id',
+                'rooms.block_id as block_id',
+                'rooms.floor as floor'
+            )
+            .leftJoin('rooms', 'systems.room_id', 'rooms.id');
+
+        // Apply filters
         if (room_id !== undefined) {
-            query = query.where('room_id', room_id);
+            query = query.where('systems.room_id', room_id);
+        }
+        if (block_id !== undefined) {
+            query = query.where('rooms.block_id', block_id);
+        }
+        if (floor !== undefined) {
+            query = query.where('rooms.floor', floor);
         }
         if (status !== undefined) {
-            query = query.where('status', status);
+            query = query.where('systems.status', status);
         }
         if (type !== undefined) {
-            query = query.where('type', type);
+            query = query.where('systems.type', type);
         }
         if (search !== undefined && search.trim() !== '') {
             query = query.where(function() {
-                this.where('disk_serial_no', 'like', `%${search}%`)
-                    .orWhere('type', 'like', `%${search}%`)
-                    .orWhere('status', 'like', `%${search}%`);
+                this.where('systems.disk_serial_no', 'like', `%${search}%`)
+                    .orWhere('systems.type', 'like', `%${search}%`)
+                    .orWhere('systems.name', 'like', `%${search}%`)
+                    .orWhere('systems.status', 'like', `%${search}%`)
+                    .orWhere('rooms.floor', 'like', `%${search}%`); // still searchable
             });
         }
 
-        // Get total count for pagination
-        const countQuery = db('systems');
-        if (room_id !== undefined) countQuery.where('room_id', room_id);
-        if (status !== undefined) countQuery.where('status', status);
-        if (type !== undefined) countQuery.where('type', type);
+        // Count query for pagination (mirrors filters)
+        const countQuery = db('systems')
+            .leftJoin('rooms', 'systems.room_id', 'rooms.id')
+            .count('systems.disk_serial_no as count');
+
+        if (room_id !== undefined) countQuery.where('systems.room_id', room_id);
+        if (block_id !== undefined) countQuery.where('rooms.block_id', block_id);
+        if (floor !== undefined) countQuery.where('rooms.floor', floor);
+        if (status !== undefined) countQuery.where('systems.status', status);
+        if (type !== undefined) countQuery.where('systems.type', type);
         if (search !== undefined && search.trim() !== '') {
             countQuery.where(function() {
-                this.where('disk_serial_no', 'like', `%${search}%`)
-                    .orWhere('type', 'like', `%${search}%`)
-                    .orWhere('status', 'like', `%${search}%`);
+                this.where('systems.disk_serial_no', 'like', `%${search}%`)
+                    .orWhere('systems.type', 'like', `%${search}%`)
+                    .orWhere('systems.status', 'like', `%${search}%`)
+                    .orWhere('systems.name', 'like', `%${search}%`)
+                    .orWhere('rooms.floor', 'like', `%${search}%`);
             });
         }
-        const countResult = await countQuery.count('disk_serial_no as count');
+
+        const countResult = await countQuery;
         const total = countResult[0]?.count ? Number(countResult[0].count) : 0;
 
         // Get paginated results
         const systems = await query.offset(offset).limit(limit);
+
         logger.info('Listed systems', {user: req.user?.id, filters: req.query});
         res.status(200).json({
             data: systems,
@@ -100,6 +164,8 @@ export const listSystems = async (req: Request, res: Response) => {
         res.status(500).json({error: 'Failed to fetch systems', details: err});
     }
 };
+
+
 
 // Get system by disk_serial_no
 export const getSystem = async (req: Request, res: Response) => {

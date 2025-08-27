@@ -37,19 +37,19 @@ export const login = async (req: Request, res: Response) => {
     try {
         const result = await db.raw('SELECT * FROM users WHERE mobile_no = ?', [mobile_no]);
         if (result.rows.length === 0) {
-            return res.status(401).json({message: 'User not found'});
+            return res.status(401).json({error: 'User not found'});
         }
         const user = result.rows[0] as UserModel;
         if (!user) {
-            return res.status(401).json({message: 'Invalid credentials'});
+            return res.status(401).json({error: 'Invalid credentials'});
         }
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) {
-            return res.status(401).json({message: 'Invalid credentials'});
+            return res.status(401).json({error: 'Invalid credentials'});
         }
 
         if(user.status!="active"){
-            return res.status(401).json({message: 'User is not active, Please Contact admin to unblock account'});
+            return res.status(401).json({error: 'User is not active, Please Contact admin to unblock account'});
         }
         // Remove password from user object
         user.password_hash = undefined as any;
@@ -57,7 +57,7 @@ export const login = async (req: Request, res: Response) => {
         res.json({token, user});
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({message: 'Server error', error: err});
+        res.status(500).json({error: 'Server error', error: err});
     }
 };
 
@@ -76,15 +76,15 @@ export const register = async (req: Request, res: Response) => {
         // Check if user already exists
         const existing = await db.raw('SELECT * FROM users WHERE mobile_no = ? OR email=?', [mobile_no,email]);
         if (existing.rows.length > 0) {
-            return res.status(409).json({message: 'User already exists'});
+            return res.status(409).json({error: 'User already exists'});
         }
 
         // Hash password
         const hashed = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
         // Insert user
         const result = await db.raw(
-            'INSERT INTO users (email,name, mobile_no, password_hash) VALUES (?,?,?,?) RETURNING id, name, mobile_no',
-            [email,name, mobile_no, hashed]
+            'INSERT INTO users (email,name, mobile_no, password_hash,status) VALUES (?,?,?,?) RETURNING id, name, mobile_no',
+            [email,name, mobile_no, hashed,'inactive']
         );
         const user = result.rows[0];
         // Remove password from user object
@@ -94,6 +94,6 @@ export const register = async (req: Request, res: Response) => {
         res.status(201).json({token, user});
     } catch (err) {
         console.error('Registration error:', err);
-        res.status(500).json({message: 'Server error', error: err});
+        res.status(500).json({error: 'Server error', error: err});
     }
 };

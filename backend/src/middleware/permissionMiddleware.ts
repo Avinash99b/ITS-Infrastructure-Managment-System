@@ -15,7 +15,7 @@ export function requirePermission(permission: string) {
             return next();
         }
 
-        return res.status(403).json({message: 'Forbidden: missing permission ' + permission + ' for user ' + req.user?.id});
+        return res.status(403).json({error: 'Forbidden: missing permission ' + permission + ' for user ' + req.user?.id});
     };
 }
 
@@ -36,7 +36,7 @@ export function requireAnyPermission(permissions: string[]) {
         if (hasPermission) {
             return next(); // User has at least one of the required permissions, proceed to the next middleware
         }
-        return res.status(403).json({message: 'Forbidden: missing one of the permissions ' + permissions.join(', ')});
+        return res.status(403).json({error: 'Forbidden: missing one of the permissions ' + permissions.join(', ')});
     };
 }
 
@@ -56,6 +56,6 @@ export function requireAllPermissions(permissions: string[]) {
             return next(); // User has all required permissions, proceed to the next middleware
         }
 
-        return res.status(403).json({message: 'Forbidden: missing all of the permissions ' + permissions.join(', ')});
+        return res.status(403).json({error: 'Forbidden: missing all of the permissions ' + permissions.join(', ')});
     };
 }

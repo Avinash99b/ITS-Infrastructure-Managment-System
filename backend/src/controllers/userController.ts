@@ -8,26 +8,10 @@ import {FileHandler} from '../components/fileHandler';
 import path from 'path';
 import fs from "fs";
 
-
-// Zod validation schema
-const updatePermissionsSchema = z.object({
-    permissionsToKeep: z.array(z.string()),
-    userMobileNo: z.string().length(10).regex(/^\d+$/)
-});
-
 const updateUserStatusSchema = z.object({
     status: z.enum(UserStatus),
 });
 
-// --- Zod schema for query params ---
-const getUsersSchema = z.object({
-    page: z.string().regex(/^\d+$/).transform(Number).default(1),
-    limit: z.string().regex(/^\d+$/).transform(Number).default(20),
-    range: z.string().optional(), // format: "YYYY-MM-DD,YYYY-MM-DD"
-    search: z.string().optional(),
-    sort: z.string().optional(), // field to sort by
-    order: z.enum(['asc', 'desc']).optional().default('asc'),
-});
 
 // Zod schema for user ID param
 const userIdParamSchema = z.object({
@@ -38,12 +22,23 @@ export async function getPermissionsForUser(userId:number){
     const user = await db<UserModel>('users').where({id: userId}).first() as UserModel;
     return user.permissions
 }
+// --- Zod schema for query params ---
+const getUsersSchema = z.object({
+    page: z.string().regex(/^\d+$/).transform(Number).default(1),
+    limit: z.string().regex(/^\d+$/).transform(Number).default(20),
+    range: z.string().optional(), // format: "YYYY-MM-DD,YYYY-MM-DD"
+    search: z.string().optional(),
+    sort: z.string().optional(), // field to sort by
+    order: z.enum(['asc', 'desc']).optional().default('asc'),
+    permissions: z.string().optional(), // comma-separated permissions
+    status: z.enum(['active', 'inactive', 'suspended']).optional(), // ✅ new filter
+});
 
 /**
  * GET /users
  * Fetches users with advanced features:
  *   - Pagination: page & limit
- *   - Filtering: range (created_at)
+ *   - Filtering: range (created_at), permissions, status
  *   - Searching: name, email, mobile_no
  *   - Sorting: sort field & order
  *
@@ -54,14 +49,8 @@ export async function getPermissionsForUser(userId:number){
  *   - search: string, search by name, email, or mobile_no (optional)
  *   - sort: string, column to sort by (optional)
  *   - order: string, "asc" or "desc" (default "asc")
- *
- * Response:
- *   {
- *     users: UserModel[],
- *     page: number,
- *     limit: number,
- *     total: number
- *   }
+ *   - permissions: string, comma-separated list of permissions (optional)
+ *   - status: "active" | "inactive" | "suspended" (optional)
  */
 export const getUsers = async (req: Request, res: Response) => {
     const parsed = getUsersSchema.safeParse(req.query);
@@ -70,7 +59,7 @@ export const getUsers = async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid params', details: parsed.error.issues });
     }
 
-    const { page, limit, range, search, sort, order } = parsed.data;
+    const { page, limit, range, search, sort, order, permissions, status } = parsed.data;
     const offset = (page - 1) * limit;
 
     try {
@@ -91,6 +80,17 @@ export const getUsers = async (req: Request, res: Response) => {
                     .orWhere('email', 'like', `%${search}%`)
                     .orWhere('mobile_no', 'like', `%${search}%`);
             });
+        }
+
+        // --- Permissions filter ---
+        if (permissions) {
+            const permsArray = permissions.split(',').map(p => p.trim());
+            query = query.whereRaw('permissions @> ?', [JSON.stringify(permsArray)]);
+        }
+
+        // --- Status filter ---
+        if (status) {
+            query = query.where('status', status);
         }
 
         // --- Sorting ---
@@ -118,16 +118,26 @@ export const getUsers = async (req: Request, res: Response) => {
                     .orWhere('mobile_no', 'like', `%${search}%`);
             });
         }
+        if (permissions) {
+            const permsArray = permissions.split(',').map(p => p.trim());
+            countQuery = countQuery.whereRaw('permissions @> ?', [JSON.stringify(permsArray)]);
+        }
+        if (status) {
+            countQuery = countQuery.where('status', status);
+        }
+
         const countResult = await countQuery.count<{ count: string }[]>('id as count');
         const total = Number(countResult[0]?.count || 0);
 
         res.json({ users: safeUsers, page, limit, total });
-        logger.info('Fetched users', { user: req.user?.id, page, limit, range, search, sort, order });
+        logger.info('Fetched users', { user: req.user?.id, page, limit, range, search, sort, order, permissions, status });
     } catch (err) {
         logger.error('Failed to fetch users', { error: err, user: req.user?.id });
         res.status(500).json({ error: 'Failed to fetch users', details: err });
     }
 };
+
+
 
 /**
  * Fetches the current user's permissions.
@@ -187,11 +197,19 @@ export const getUser = async (req: Request, res: Response) => {
     }
 };
 
+
+// Zod validation schema
+const updatePermissionsSchema = z.object({
+    permissions: z.array(z.string()),
+    userId: z.coerce.number().min(1)
+});
+
+
 /**
  * Updates the permissions of the current user.
  * Expects a JSON body with an array of permissions to keep.
- * Example: { "permissionsToKeep": ["permission1", "permission2"] }
- * This will overwrite the user's extra_permissions with the provided permissions.
+ * Example: { "permissions": ["permission1", "permission2"], "userId": 123 }
+ * This will overwrite the user's permissions with the provided permissions.
  * @param req
  * @param res
  */
@@ -208,41 +226,44 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
             return res.status(400).json({error: 'Invalid input', details: parsed.error.issues.map(zodErrorMapper)});
         }
 
-        const {permissionsToKeep, userMobileNo} = parsed.data;
+        const {permissions, userId} = parsed.data;
 
-        // First get user from updaterUserId, he can only grant permissions to other users, not himself, and only permissionsToKeep he has
+        // First get user from updaterUserId, he can only grant permissions to other users, not himself, and only permissions he has
         const updaterUser = await db('users').where({id: updaterUserId}).first() as UserModel;
         if (!updaterUser) {
             logger.warn('Updater user not found', {user: updaterUserId});
             return res.status(404).json({error: 'Updater user not found'});
         }
 
-        if(updaterUser.mobile_no==userMobileNo){
+        if(updaterUserId === userId){
             logger.warn('Updater user cannot update their own permissions', {user: updaterUserId});
             return res.status(403).json({error: 'You cannot update your own permissions'});
         }
 
-        const userToUpdate = await db('users').where({mobile_no: userMobileNo}).first() as UserModel;
+        const userToUpdate = await db('users').where({id: userId}).first() as UserModel;
         if (!userToUpdate) {
-            logger.warn('User to update not found', {mobile_no: userMobileNo, user: updaterUserId});
+            logger.warn('User to update not found', {userId, user: updaterUserId});
             return res.status(404).json({error: 'User to update not found'});
         }
         const availablePermissions = await db('permissions').select('name') as { name: string }[];
         const availablePermissionsSet = new Set(availablePermissions.map(p => p.name));
 
         // Validate that all provided permissions are available
-        const invalidPermissions = permissionsToKeep.filter(permission => !availablePermissionsSet.has(permission));
+        const invalidPermissions = permissions.filter(permission => !availablePermissionsSet.has(permission));
         if (invalidPermissions.length > 0) {
             return res.status(400).json({error: 'Invalid permissions provided', invalidPermissions});
         }
 
-        //Check if permissionsToKeep is an array and not contains *
-        if (!Array.isArray(permissionsToKeep)) {
+        if (!Array.isArray(permissions)) {
             return res.status(400).json({error: 'Invalid permissions format'});
         }
 
         // Check if updaterUser has permission to grant permissions
-        for( const permission of permissionsToKeep) {
+        for( const permission of permissions) {
+            //Ignore permissions which the user already has
+            if(userToUpdate.permissions.includes(permission)){
+                continue;
+            }
             if(updaterUser.permissions?.includes("*")){
                 logger.info('Updater user has wildcard permission, allowing all permissions', {user: updaterUserId});
                 continue; // If updaterUser has wildcard permission, allow all permissions
@@ -257,10 +278,10 @@ export const updateUserPermissions = async (req: Request, res: Response) => {
             }
         }
 
-        await db('users').where({mobile_no: userMobileNo}).update({permissions: JSON.stringify(permissionsToKeep)});
-        logger.info('Updated user permissions', {user: req.user?.id, permissions: permissionsToKeep});
+        await db('users').where({id: userId}).update({permissions: JSON.stringify(permissions)});
+        logger.info(`Updated user permissions by ${updaterUserId} for ${userToUpdate.id}`, permissions);
 
-        res.json({message: 'Permissions updated successfully', success: true, userMobileNo, permissions: permissionsToKeep});
+        res.json({message: 'Permissions updated successfully', success: true, userId, permissions: permissions});
     } catch (err) {
         logger.error('Failed to update user permissions', {error: err, user: req.user?.id});
         res.status(500).json({error: 'Failed to update user permissions', details: err});

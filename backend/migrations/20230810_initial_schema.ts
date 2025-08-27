@@ -97,6 +97,7 @@ export async function up(knex: Knex): Promise<void> {
                 {name: 'assign_technician', description: 'Permission to Assign Technician'},
                 {name: 'edit_blocks', description: 'Permission to edit blocks'},
                 {name: '*', description: 'All permissions, use with caution'},
+                {name: 'fix_faults', description: 'Permission granting a user the ability to fix reported faults'},
                 {
                     name: 'grant_permissions',
                     description: 'Permission to grant permissions to users except self and wildcard (*)'

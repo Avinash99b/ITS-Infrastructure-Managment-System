@@ -130,7 +130,7 @@ router.get('/me/permissions', authenticateToken,getUserPermissions);
  * @swagger
  * /api/v1/users/permissions:
  *   patch:
- *     summary: Update user permissions
+ *     summary: Update user permissions - Need to send array of full permissions to keep
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -142,7 +142,7 @@ router.get('/me/permissions', authenticateToken,getUserPermissions);
  *             type: object
  *             properties:
  *               userId:
- *                 type: string
+ *                 type: number
  *               permissions:
  *                 type: array
  *                 items:
