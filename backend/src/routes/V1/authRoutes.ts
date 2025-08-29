@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {login, register} from '../../controllers/authController';
+import {login, register, forgotPassword} from '../../controllers/authController';
 
 const router = Router();
 /**
@@ -56,8 +56,29 @@ const router = Router();
  *         description: User registered
  *       400:
  *         description: Invalid request
+ * /api/v1/auth/forgot-password:
+ *   post:
+ *     summary: Forgot password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               mobile_no:
+ *                 type: string
+ *                 format: mobile_no
+ *                 description: Mobile No of the user
+ *     responses:
+ *       200:
+ *         description: Password reset link sent
+ *       400:
+ *         description: Invalid request
  */
 router.post('/login', login);
 router.post('/register', register);
+router.post('/forgot-password', forgotPassword);
 
 export default router;

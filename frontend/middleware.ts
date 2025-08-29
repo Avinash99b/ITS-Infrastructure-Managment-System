@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if ((pathname.startsWith('/login') || pathname.startsWith('/register')) && token) {
+  if ((pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password')) && token) {
      return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

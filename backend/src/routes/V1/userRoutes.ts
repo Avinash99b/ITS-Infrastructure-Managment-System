@@ -9,7 +9,8 @@ import {
     getUserById,
     getUserProfile,
     updateUserProfileImage,
-    updateCurrentUser
+    updateCurrentUser,
+    updatePassword
 } from '../../controllers/userController';
 import {requirePermission} from "../../middleware/permissionMiddleware";
 import {emptyMiddleware} from "../../middleware/emptyMiddleware";
@@ -361,6 +362,41 @@ router.patch('/me/profile-image', authenticateToken, upload.single('file'), upda
  *         description: Internal server error
  */
 router.patch('/me', authenticateToken, updateCurrentUser);
+
+/**
+ * @swagger
+ * /api/v1/users/update-password:
+ *   post:
+ *     summary: Update current user's password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *                 description: Current password of the user
+ *               newPassword:
+ *                 type: string
+ *                 description: New password for the user
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *       400:
+ *         description: Invalid input or password not strong enough
+ *       401:
+ *         description: Unauthorized (No token or invalid token)
+ *       403:
+ *         description: Forbidden (Missing permission)
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/update-password', authenticateToken, updatePassword);
 
 
 export default router;

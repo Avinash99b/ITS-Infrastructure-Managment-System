@@ -7,6 +7,7 @@ import zodErrorMapper from "../components/zodErrorMapper";
 import {FileHandler} from '../components/fileHandler';
 import path from 'path';
 import fs from "fs";
+import bcrypt from 'bcryptjs';
 
 const updateUserStatusSchema = z.object({
     status: z.enum(UserStatus),
@@ -512,5 +513,39 @@ export const updateCurrentUser = async (req: Request, res: Response) => {
     } catch (err) {
         logger.error('Failed to update user', {error: err, user: userId});
         res.status(500).json({error: 'Failed to update user', details: err});
+    }
+};
+
+// Zod schema for password update
+const updatePasswordSchema = z.object({
+    oldPassword: z.string().min(8),
+    newPassword: z.string().min(8)
+});
+
+export const updatePassword = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const parsed = updatePasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues.map(zodErrorMapper) });
+    }
+    const { oldPassword, newPassword } = parsed.data;
+    try {
+        const user = await db('users').where({ id: userId }).first();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const valid = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!valid) {
+            return res.status(400).json({ error: 'Old password is incorrect' });
+        }
+        const hashed = await bcrypt.hash(newPassword, process.env.PASSWORD_SALT_ROUNDS ? parseInt(process.env.PASSWORD_SALT_ROUNDS) : 10);
+        await db('users').where({ id: userId }).update({ password_hash: hashed });
+        res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+        logger.error('Failed to update password', { error: err, user: userId });
+        res.status(500).json({ error: 'Failed to update password', details: err });
     }
 };

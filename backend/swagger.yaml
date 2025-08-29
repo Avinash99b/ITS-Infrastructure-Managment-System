@@ -63,6 +63,27 @@ paths:
           description: User registered
         "400":
           description: Invalid request
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Forgot password
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mobile_no:
+                  type: string
+                  format: mobile_no
+                  description: Mobile No of the user
+      responses:
+        "200":
+          description: Password reset link sent
+        "400":
+          description: Invalid request
   /api/v1/blocks:
     get:
       summary: Get all blocks
@@ -971,6 +992,37 @@ paths:
           description: No file uploaded or invalid file type
         "401":
           description: Unauthorized
+        "500":
+          description: Internal server error
+  /api/v1/users/update-password:
+    post:
+      summary: Update current user's password
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                  description: Current password of the user
+                newPassword:
+                  type: string
+                  description: New password for the user
+      responses:
+        "200":
+          description: Password updated successfully
+        "400":
+          description: Invalid input or password not strong enough
+        "401":
+          description: Unauthorized (No token or invalid token)
+        "403":
+          description: Forbidden (Missing permission)
         "500":
           description: Internal server error
 components:

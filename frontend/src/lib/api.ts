@@ -1,17 +1,19 @@
+
+
 'use client';
 import type {
-    PaginatedUsersResponse,
-    PaginatedRoomsResponse,
-    Block,
-    User,
-    PaginatedFaultsResponse,
-    UserProfile,
-    Fault,
-    FaultType,
-    Room,
-    PaginatedSystemsResponse,
-    System,
-    Permission,
+  PaginatedUsersResponse,
+  PaginatedRoomsResponse,
+  Block,
+  User,
+  PaginatedFaultsResponse,
+  UserProfile,
+  Fault,
+  FaultType,
+  Room,
+  PaginatedSystemsResponse,
+  System,
+  Permission,
 } from '@/types';
 import { getAuthToken } from './auth';
 import { toast } from '@/hooks/use-toast';
@@ -27,109 +29,111 @@ function getFullImageUrl(path: string | null): string{
 }
 
 async function fetcher<T>(
-    url: string,
-    options: RequestInit = {},
-    isText: boolean = false
+  url: string,
+  options: RequestInit = {},
+  isText: boolean = false
 ): Promise<T> {
-    const token = getAuthToken();
-    const headers = options.headers || {};
+  const token = getAuthToken();
+  const headers = options.headers || {};
+  
+  const isFormData = options.body instanceof FormData;
 
-    const isFormData = options.body instanceof FormData;
-
-    if (!isFormData && !isText) {
-        (headers as Record<string, string>)['Content-Type'] = 'application/json';
-    }
+  if (!isFormData && !isText) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
 
 
-    if (token) {
-        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
 
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-        ...options,
-        headers,
-    });
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
 
-    if (!response.ok) {
-        if (response.status === 204) {
-            return null as T;
-        }
-        const errorData = await response.json().catch(() => ({}));
-
-        let errorMessage = errorData.error || `API Error: ${response.status} ${response.statusText}`;
-
-        if (errorMessage.toLowerCase() === "no token provided") {
-            throw new Error("AUTH_ERROR"); // Use a specific error message
-        }
-
-        if (response.status === 404 && errorData.error) {
-            errorMessage = errorData.error;
-        } else if (errorData.details) {
-            errorMessage = `${errorData.error}: ${errorData.details.map((d: { field: string, message: string }) => `${d.field}: ${d.message}`).join(', ')}`;
-        }
-
-        throw new Error(errorMessage);
-    }
+  if (!response.ok) {
     if (response.status === 204) {
-        return null as T;
+      return null as T;
     }
+    const errorData = await response.json().catch(() => ({}));
 
-    if (isText) {
-        return response.text() as Promise<T>;
+    let errorMessage = errorData.error || `API Error: ${response.status} ${response.statusText}`;
+
+    if (errorMessage.toLowerCase() === "no token provided") {
+        throw new Error("AUTH_ERROR"); // Use a specific error message
     }
-
-    return response.json();
+    
+    if (response.status === 404 && errorData.error) {
+      errorMessage = errorData.error;
+    } else if (errorData.details) {
+        errorMessage = `${errorData.error}: ${errorData.details.map((d: { field: string, message: string }) => `${d.field}: ${d.message}`).join(', ')}`;
+    }else if(response.status===403){
+      errorMessage="403: You do not have permission to perform this action";
+    }
+    
+    throw new Error(errorMessage);
+  }
+  if (response.status === 204) {
+    return null as T;
+  }
+  
+  if (isText) {
+    return response.text() as Promise<T>;
+  }
+  
+  return response.json();
 }
 
 const handleApiError = (error: unknown, toastFn: (options: any) => void, title: string) => {
     if (error instanceof Error && error.message === 'AUTH_ERROR') {
-        toastFn({
-            variant: "destructive",
-            title: "Authentication Required",
-            description: React.createElement("div", { className: "flex items-center justify-between" },
-                "You need to login for this action.",
-                React.createElement(Link, { href: "/login", className: "ml-4 text-sm underline" }, "Login")
-            ),
-        });
-        return; // Stop further execution
+      toastFn({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: React.createElement("div", { className: "flex items-center justify-between" }, 
+          "You need to login for this action.",
+           React.createElement(Link, { href: "/login", className: "ml-4 text-sm underline" }, "Login")
+        ),
+      });
+      return; // Stop further execution
     }
     toastFn({
-        variant: 'destructive',
-        title,
-        description:
-            error instanceof Error ? error.message : 'An error occurred',
+      variant: 'destructive',
+      title,
+      description:
+        error instanceof Error ? error.message : 'An error occurred',
     });
 };
 
 
 // User API
 export const getUsers = async (
-    params: URLSearchParams
+  params: URLSearchParams
 ): Promise<PaginatedUsersResponse> => {
-    const data = await fetcher<PaginatedUsersResponse>(`/api/v1/users?${params.toString()}`);
-    data.users = data.users.map(user => ({
-        ...user,
-        image_url: getFullImageUrl(user.image_url),
-    }));
-    return data;
+  const data = await fetcher<PaginatedUsersResponse>(`/api/v1/users?${params.toString()}`);
+  data.users = data.users.map(user => ({
+      ...user,
+      image_url: getFullImageUrl(user.image_url),
+  }));
+  return data;
 };
 
 export const getUserById = async (id: string): Promise<User> => {
-    const user = await fetcher<User>(`/api/v1/users/${id}`);
-    user.image_url = getFullImageUrl(user.image_url) as string;
-    return user;
+  const user = await fetcher<User>(`/api/v1/users/${id}`);
+  user.image_url = getFullImageUrl(user.image_url) as string;
+  return user;
 };
 
 export const getUserProfile = async (id: number): Promise<UserProfile> => {
-    const profile = await fetcher<UserProfile>(`/api/v1/users/${id}/profile`);
-    profile.image_url = getFullImageUrl(profile.image_url);
-    return profile;
+  const profile = await fetcher<UserProfile>(`/api/v1/users/${id}/profile`);
+  profile.image_url = getFullImageUrl(profile.image_url);
+  return profile;
 };
 
 export const getCurrentUser = async (): Promise<User> => {
-    const user = await fetcher<User>('/api/v1/users/me');
-    user.image_url = getFullImageUrl(user.image_url);
-    return user;
+  const user = await fetcher<User>('/api/v1/users/me');
+  user.image_url = getFullImageUrl(user.image_url);
+  return user;
 };
 
 export const updateCurrentUser = async (data: { name?: string, email?: string }): Promise<User> => {
@@ -157,10 +161,17 @@ export const updateUserStatus = (userId: number, status: string): Promise<void> 
     });
 };
 
+export const updateCurrentUserPassword = (data: { oldPassword?: string, newPassword?: string }): Promise<void> => {
+    return fetcher('/api/v1/users/update-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
 
 // Permissions API
 export const getPermissions = (): Promise<Permission[]> => {
-    return fetcher('/api/v1/permissions');
+  return fetcher('/api/v1/permissions');
 };
 
 export const updateUserPermissions = (userId: number, permissions: string[]): Promise<void> => {
@@ -173,7 +184,7 @@ export const updateUserPermissions = (userId: number, permissions: string[]): Pr
 
 // Block API
 export const getBlocks = (): Promise<Block[]> => {
-    return fetcher('/api/v1/blocks');
+  return fetcher('/api/v1/blocks');
 };
 
 export const createBlock = (data: Omit<Block, 'id' | 'created_at' | 'updated_at' | 'image_url'>): Promise<Block> => {
@@ -199,32 +210,32 @@ export const deleteBlock = (id: string): Promise<void> => {
 
 // Room API
 export const getRooms = async (
-    params: URLSearchParams
+  params: URLSearchParams
 ): Promise<PaginatedRoomsResponse> => {
-    return await fetcher<PaginatedRoomsResponse>(`/api/v1/rooms?${params.toString()}`);
+  return await fetcher<PaginatedRoomsResponse>(`/api/v1/rooms?${params.toString()}`);
 };
 
 export const createRoom = (data: { name: string; blockId: number; floor: number }): Promise<Room> => {
-    return fetcher('/api/v1/rooms', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
+  return fetcher('/api/v1/rooms', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 };
 
 export const updateRoom = (
-    id: number,
-    data: Partial<{ name: string; blockId: number; floor: number }>
+  id: number,
+  data: Partial<{ name: string; blockId: number; floor: number }>
 ): Promise<Room> => {
-    return fetcher(`/api/v1/rooms/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-    });
+  return fetcher(`/api/v1/rooms/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 };
 
 export const deleteRoom = (id: number): Promise<void> => {
-    return fetcher(`/api/v1/rooms/${id}`, {
-        method: 'DELETE',
-    });
+  return fetcher(`/api/v1/rooms/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 // Faults API
@@ -233,26 +244,26 @@ export const getFaultTypes = (): Promise<FaultType[]> => {
 };
 
 export const getFaults = async (
-    params: URLSearchParams
+  params: URLSearchParams
 ): Promise<PaginatedFaultsResponse> => {
-    const response = await fetcher<PaginatedFaultsResponse>(`/api/v1/faults/reports?${params.toString()}`);
+  const response = await fetcher<PaginatedFaultsResponse>(`/api/v1/faults/reports?${params.toString()}`);
     response.data = response.data.map(fault => ({
         ...fault,
         reporter_image_url: getFullImageUrl(fault.reporter_image_url),
         technician_image_url: getFullImageUrl(fault.technician_image_url || null),
     }));
-    return response;
+  return response;
 };
 
 export const createFault = (data: {
-    system_disk_serial_no: string;
-    fault_name: string;
-    description?: string;
+  system_disk_serial_no: string;
+  fault_name: string;
+  description?: string;
 }): Promise<Fault> => {
-    return fetcher('/api/v1/faults/report', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
+  return fetcher('/api/v1/faults/report', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 };
 
 export const updateFaultStatus = (fault_id: number, status: string): Promise<void> => {
@@ -271,7 +282,7 @@ export const assignTechnician = (reportId: string, technicianId: number): Promis
 
 // Systems API
 export const getSystems = (params: URLSearchParams): Promise<PaginatedSystemsResponse> => {
-    return fetcher(`/api/v1/systems?${params.toString()}`);
+  return fetcher(`/api/v1/systems?${params.toString()}`);
 };
 
 export const createSystem = (data: { name: string; disk_serial_no: string; type: string; status: string; }): Promise<System> => {
@@ -299,10 +310,10 @@ export const updateSystemSpeed = (disk_serial_no: string, speed: number): Promis
 export const getMetrics = async () => {
     const textData = await fetcher<{totalRequests:number,averageDuration:number}>('/api/v1/metrics', {}, false);
     return {...textData};
-
+    
 };
 
 
 export { handleApiError };
 
-
+    
